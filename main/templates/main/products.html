@@ -1,0 +1,455 @@
+{% extends "main/base.html" %}
+
+{% block content %}
+  <header>
+    <h1>Система управления</h1>
+    <div class="menu">
+      <a href="/warehouse/materials/" class="active">Склад</a>
+      <a href="/ceh/workers/">Цех</a>
+      <a href="/docs/">Документация</a>
+      <div class="avatar"></div>
+    </div>
+  </header>
+
+  <!-- Подвкладки Склад -->
+  <div class="submenu" id="submenu-sklad">
+    <button data-target="materials"><a href="/warehouse/materials/">Материалы</a></button>
+    <button data-target="products" class="active"><a href="/warehouse/products/">Готовые изделия</a></button>
+    <button data-target="overuse"><a href="/warehouse/overuse/">Перерасход</a></button>
+  </div>
+
+  <!-- Документация -->
+  <main id="docs">
+  <!-- Склад -->
+  <section id="sklad">
+    <div class="table-section" id="products">
+      <h2>Готовые изделия</h2>
+    
+      <div class="filters">
+        <input type="text" id="filter-batch" placeholder="Номер партии">
+        <input type="text" id="filter-name" placeholder="Название">
+        <select id="sort-products-qty">
+          <option value="">Количество</option>
+          <option value="asc">По возрастанию</option>
+          <option value="desc">По убыванию</option>
+        </select>
+        <input type="text" id="filter-size" placeholder="Размер">
+      </div>
+    
+      <div class="product-actions">
+        <button onclick="filterProducts()">Поиск</button>
+        <button onclick="document.getElementById('dialog-add-product').showModal()">Добавить изделие</button>
+        <button onclick="document.getElementById('dialog-edit-qty').showModal()">Изменить количество</button>
+        <button onclick="document.getElementById('dialog-edit-row-id').showModal()">Изменить строку</button>
+        <button onclick="document.getElementById('dialog-delete-row-id').showModal()">Удалить строку</button>
+      </div>
+    
+      <table>
+        <thead>
+          <tr><th>ID</th><th>Партия</th><th>Название</th><th>Размер</th><th>Кол-во</th></tr>
+        </thead>
+        <tbody id="products-table-body">
+          {% for p in products %}
+          <tr><td>{{ p.id }}</td><td>{{p.batch}}</td><td>{{ p.product_name }}</td><td>{{ p.size }}</td><td>{{ p.quantity_product }}</td></tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+    
+
+    <!--  dialog: Добавить -->
+<dialog id="dialog-add-product" class="custom-dialog">
+  <div class="dialog-header"><h2>Добавление новой записи</h2></div>
+  <form class="form-styled" onsubmit="performAddProduct(event)">
+    <div class="form-field"><label>Номер партии</label><input type="text" id="product-batch"></div>
+    <div class="form-field"><label>Название</label><input type="text" id="product-name"></div>
+    <div class="form-field"><label>Размер</label><input type="text" id="product-size"></div>
+    <div class="form-field"><label>Количество</label><input type="number" id="product-qty"></div>
+    <div class="dialog-buttons">
+      <button class="primary" type="submit">Добавить</button>
+      <button type="button" onclick="this.closest('dialog').close()">Закрыть</button>
+    </div>
+  </form>
+</dialog>
+
+<!--  dialog: Изменить — ввод -->
+<!--  dialog: Изменить — редактирование -->
+<dialog id="dialog-edit-qty" class="custom-dialog">
+  <div class="dialog-header">
+    <h2>Изменить количество</h2>
+  </div>
+  <form class="form-styled" onsubmit="updateProductQty(event)">
+    <div class="form-field">
+      <label for="qty-edit-id">ID изделия</label>
+      <input type="text" id="qty-edit-id" placeholder="Например, 001" required>
+    </div>
+    <div class="form-field">
+      <label for="qty-edit-value">Новое количество</label>
+      <input type="number" id="qty-edit-value" placeholder="Например, 50" required>
+    </div>
+    <div class="dialog-buttons">
+      <button type="submit" class="primary">Сохранить</button>
+      <button type="button" onclick="this.closest('dialog').close()">Закрыть</button>
+    </div>
+  </form>
+</dialog>
+
+<!--  dialog: Изменить строку -->
+<dialog id="dialog-edit-row-id" class="custom-dialog">
+  <div class="dialog-header"><h2>Редактирование строки</h2></div>
+  <form class="form-styled">
+    <div class="form-field">
+      <label for="edit-row-id">Введите ID записи</label>
+      <input type="text" id="edit-row-id" placeholder="Например, 002" required>
+    </div>
+    <div class="dialog-buttons">
+      <button type="button" onclick="openEditRow()">Продолжить</button>
+      <button type="button" onclick="this.closest('dialog').close()">Закрыть</button>
+    </div>
+  </form>
+</dialog>
+
+<dialog id="dialog-edit-row-form" class="custom-dialog">
+  <div class="dialog-header"><h2>Редактирование записи</h2></div>
+  <form class="form-styled" onsubmit="saveRowEdit(event)">
+    <div class="form-field"><label>Номер партии</label><input type="text" id="edit-batch"></div>
+    <div class="form-field"><label>Название</label><input type="text" id="edit-name-full"></div>
+    <div class="form-field"><label>Размер</label><input type="text" id="edit-size"></div>
+    <div class="form-field"><label>Количество</label><input type="number" id="edit-qty-full"></div>
+    <div class="dialog-buttons">
+      <button class="primary" type="submit">Сохранить</button>
+      <button type="button" onclick="this.closest('dialog').close()">Закрыть</button>
+    </div>
+  </form>
+</dialog>
+
+
+<!--  dialog: Удалить — ввод -->
+<dialog id="dialog-delete-row-id" class="custom-dialog">
+  <div class="dialog-header"><h2>Удаление строки</h2></div>
+  <form class="form-styled">
+    <div class="form-field">
+      <label for="delete-row-id">Введите ID строки</label>
+      <input type="text" id="delete-row-id" placeholder="Например, 002" required>
+    </div>
+    <div class="dialog-buttons">
+      <button type="button" onclick="confirmDeleteRow()">Удалить</button>
+      <button type="button" onclick="this.closest('dialog').close()">Отмена</button>
+    </div>
+  </form>
+</dialog>
+
+
+<!--  dialog: Удалить — подтверждение -->
+<dialog id="dialog-confirm-delete-row" class="custom-dialog">
+  <div class="dialog-header"><h2>Подтверждение удаления</h2></div>
+  <div class="form-styled">
+    <p>
+      Удалить запись с ID <strong id="confirm-delete-row-id"></strong>?
+      <br><strong id="confirm-delete-row-data"></strong>
+    </p>
+        <div class="dialog-buttons">
+      <button onclick="performDeleteRow()">Да</button>
+      <button onclick="document.getElementById('dialog-confirm-delete-row').close()">Нет</button>
+    </div>
+  </div>
+</dialog>
+
+<!--  dialog: добавить — подтверждение -->
+<dialog id="dialog-confirm-add-product" class="custom-dialog">
+  <div class="dialog-header"><h2>Подтверждение добавления</h2></div>
+  <div class="form-styled">
+    <p>Добавить: <strong id="confirm-add-product-data"></strong>?</p>
+    <div class="dialog-buttons">
+      <button onclick="addProduct()">Да</button>
+      <button onclick="document.getElementById('dialog-confirm-add-product').close()">Нет</button>
+    </div>
+  </div>
+</dialog>
+
+<!--  dialog: изменить количество — подтверждение -->
+<dialog id="dialog-confirm-edit-qty" class="custom-dialog">
+  <div class="dialog-header"><h2>Подтверждение изменения</h2></div>
+  <div class="form-styled">
+    <p>
+      Изменить количество у записи:
+      <br><strong>ID:</strong> <span id="confirm-edit-qty-id"></span>
+      <br><span id="confirm-edit-qty-name"></span>
+      <br><span id="confirm-edit-qty-batch"></span>
+      <br>Новое количество: <strong id="confirm-edit-qty-val"></strong>
+    </p>    <div class="dialog-buttons">
+      <button onclick="performUpdateProductQty()">Да</button>
+      <button onclick="document.getElementById('dialog-confirm-edit-qty').close()">Нет</button>
+    </div>
+  </div>
+</dialog>
+
+<!--  dialog: Изменить строку — подтверждение -->
+<dialog id="dialog-confirm-edit-product-row" class="custom-dialog">
+  <div class="dialog-header"><h2>Подтверждение изменения</h2></div>
+  <div class="form-styled">
+    <p>Изменить строку ID <strong id="confirm-edit-row-id"></strong> с новыми данными?</p>
+    <p>
+      Изменить строку ID <strong id="confirm-edit-row-id"></strong> с новыми данными:
+      <br><strong id="confirm-edit-row-data"></strong>
+    </p>
+    <div class="dialog-buttons">
+      <button onclick="performRowEdit()">Да</button>
+      <button onclick="document.getElementById('dialog-confirm-edit-product-row').close()">Нет</button>
+    </div>
+  </div>
+</dialog>
+  </section>
+
+  <script>
+let currentEditRow = null;
+
+function perfomAddProduct(e) {
+  e.preventDefault();
+  pendingProductAction = {
+    batch: document.getElementById('product-batch').value,
+    name: document.getElementById('product-name').value,
+    size: document.getElementById('product-size').value,
+    qty: document.getElementById('product-qty').value,
+  };
+
+  const text = `
+    Партия: ${pendingProductAction.batch}, 
+    Название: ${pendingProductAction.name}, 
+    Размер: ${pendingProductAction.size}, 
+    Кол-во: ${pendingProductAction.qty}`;
+
+  document.getElementById('confirm-add-product-data').textContent = text;
+  document.getElementById('dialog-confirm-add-product').showModal();
+}
+
+
+function updateProductQty(e) {
+  e.preventDefault();
+  const id = document.getElementById('qty-edit-id').value.trim();
+  const qty = document.getElementById('qty-edit-value').value.trim();
+  const rows = document.querySelectorAll('#products-table-body tr');
+
+  let foundRow = null;
+  rows.forEach(row => {
+    if (row.cells[0].textContent === id) {
+      foundRow = row;
+    }
+  });
+
+  if (!foundRow) {
+    alert("Запись с таким ID не найдена.");
+    return;
+  }
+
+  pendingProductAction = {
+    id: id,
+    qty: qty,
+    name: foundRow.cells[2].textContent,
+    batch: foundRow.cells[1].textContent
+  };
+
+  document.getElementById('confirm-edit-qty-id').textContent = `${id}`;
+  document.getElementById('confirm-edit-qty-val').textContent = `${qty}`;
+  document.getElementById('confirm-edit-qty-batch').textContent = `Партия: ${pendingProductAction.batch}`;
+  document.getElementById('confirm-edit-qty-name').textContent = `Название: ${pendingProductAction.name}`;
+
+  document.getElementById('dialog-confirm-edit-qty').showModal();
+}
+
+
+let editingRow = null;
+
+function openEditRow() {
+  const id = document.getElementById('edit-row-id').value.trim();
+  const rows = document.querySelectorAll('#products-table-body tr');
+  editingRow = null;
+
+  rows.forEach(row => {
+    if (row.cells[0].textContent === id) {
+      editingRow = row;
+    }
+  });
+
+  if (!editingRow) {
+    alert("Запись с таким ID не найдена.");
+    return;
+  }
+
+  document.getElementById('edit-batch').value = editingRow.cells[1].textContent;
+  document.getElementById('edit-name-full').value = editingRow.cells[2].textContent;
+  document.getElementById('edit-size').value = editingRow.cells[3].textContent;
+  document.getElementById('edit-qty-full').value = editingRow.cells[4].textContent;
+
+  document.getElementById('dialog-edit-row-id').close();
+  document.getElementById('dialog-edit-row-form').showModal();
+}
+
+function saveRowEdit(e) {
+  e.preventDefault();
+  if (!editingRow) return;
+
+  pendingProductAction = {
+    row: editingRow,
+    id: editingRow.cells[0].textContent,
+    batch: document.getElementById('edit-batch').value,
+    name: document.getElementById('edit-name-full').value,
+    size: document.getElementById('edit-size').value,
+    qty: document.getElementById('edit-qty-full').value
+  };
+
+  document.getElementById('confirm-edit-row-id').textContent = pendingProductAction.id;
+  document.getElementById('confirm-edit-row-data').textContent =
+    `Партия: ${pendingProductAction.batch}, Название: ${pendingProductAction.name}, Размер: ${pendingProductAction.size}, Кол-во: ${pendingProductAction.qty}`;
+
+  document.getElementById('dialog-confirm-edit-product-row').showModal();
+}
+
+
+function confirmDeleteRow() {
+  const id = document.getElementById('delete-row-id').value.trim();
+  const rows = document.querySelectorAll('#products-table-body tr');
+  let foundRow = null;
+
+  fetch(`/products/get/${id}`).then(response => {
+    if (response.status == 404){
+      return alert("Запись с таким ID не найдена.");
+    }
+    if (response.status == 200){
+      rows.forEach(row => {
+        if (row.cells[0].textContent === id) {
+          foundRow = row;
+        }
+      });
+
+      pendingProductAction = {
+        id: id,
+        batch: foundRow.cells[1].textContent,
+        name: foundRow.cells[2].textContent,
+        size: foundRow.cells[3].textContent,
+        qty: foundRow.cells[4].textContent
+      };
+
+      document.getElementById('confirm-delete-row-id').textContent = id;
+      document.getElementById('confirm-delete-row-data').textContent =
+        `Партия: ${pendingProductAction.batch}, Название: ${pendingProductAction.name}, Размер: ${pendingProductAction.size}, Кол-во: ${pendingProductAction.qty}`;
+
+      document.getElementById('dialog-delete-row-id').close();
+      document.getElementById('dialog-confirm-delete-row').showModal();
+    }
+  })
+}
+
+
+function performDeleteRow() {
+  const id = document.getElementById('confirm-delete-row-id').textContent;
+  const rows = document.querySelectorAll('#products-table-body tr');
+
+  rows.forEach(row => {
+    if (row.cells[0].textContent === id) {
+      row.remove();
+    }
+  });
+
+  document.getElementById('dialog-confirm-delete-row').close();
+  fetch(`/products/delete/${id}`, {method: "DELETE"})
+}
+
+let pendingAdd = {};
+
+let pendingEdit = {};
+
+
+function addProduct() {
+  const tbody = document.getElementById('products-table-body');
+  fetch(`/products/add/`, {
+    method: "POST",
+    body: JSON.stringify({
+      batch: pendingProductAction.batch,
+      name: pendingProductAction.name,
+      size: pendingProductAction.size,
+      quantity: pendingProductAction.qty
+    })
+  }).then(response => {
+    if (response.status == 201){
+      response.json().then(p => {
+        const row = document.createElement('tr');
+        row.innerHTML = `<td>${p.id}</td>
+                        <td>${p.batch}</td>
+                        <td>${p.product_name}</td>
+                        <td>${p.size}</td>
+                        <td>${p.quantity_product}</td>`;
+        tbody.appendChild(row);
+
+        document.getElementById('dialog-confirm-add-product').close();
+        document.getElementById('dialog-add-product').close();
+        document.querySelector('#dialog-add-product form').reset();
+      })
+    }
+  })
+}
+
+function performUpdateProductQty() {
+  const rows = document.querySelectorAll('#products-table-body tr');
+  rows.forEach(row => {
+    if (row.cells[0].textContent === pendingProductAction.id) {
+      row.cells[4].textContent = pendingProductAction.qty;
+    }
+  });
+
+  document.getElementById('dialog-confirm-edit-qty').close();
+  document.getElementById('dialog-edit-qty').close();
+  document.querySelector('#dialog-edit-qty form').reset();
+  fetch(`/products/edit/${pendingProductAction.id}/`, {
+    method: "POST",
+    body: JSON.stringify({
+      quantity: pendingProductAction.qty
+    })
+  })
+}
+
+function performRowEdit() {
+  if (!pendingProductAction.row) return;
+
+  pendingProductAction.row.cells[1].textContent = pendingProductAction.batch;
+  pendingProductAction.row.cells[2].textContent = pendingProductAction.name;
+  pendingProductAction.row.cells[3].textContent = pendingProductAction.size;
+  pendingProductAction.row.cells[4].textContent = pendingProductAction.qty;
+
+  document.getElementById('dialog-confirm-edit-product-row').close();
+  document.getElementById('dialog-edit-row-form').close();
+  document.querySelector('#dialog-edit-row-form form')?.reset();
+  editingRow = null;
+  fetch(`/products/edit/${pendingProductAction.id}`, {
+    method: "POST",
+    body: JSON.stringify({
+      batch: pendingProductAction.batch,
+      name: pendingProductAction.name,
+      size: pendingProductAction.size,
+      quantity: pendingProductAction.qty, 
+    })
+  })
+}
+
+function filterProducts() {
+  const batch = document.querySelector(".filters").children[0].value;
+  const name = document.querySelector(".filters").children[1].value;
+  const quanity_order = document.querySelector(".filters").children[2].value;
+  const size = document.querySelector(".filters").children[3].value;
+
+  fetch(`/products/filter/?batch=${batch}&name=${name}&quantity_order=${quanity_order}&size=${size}`).then(response => response.json()).then(response => {
+    const tbody = document.getElementById('products-table-body');
+    tbody.innerHTML = '';
+    response.products.forEach(p => {
+      const row = document.createElement('tr');
+      row.innerHTML = `<td>${p.id}</td>
+                        <td>${p.batch}</td>
+                        <td>${p.product_name}</td>
+                        <td>${p.size}</td>
+                        <td>${p.quantity_product}</td>`;
+      tbody.appendChild(row);
+    })
+  })
+}
+  </script>
+{% endblock %}

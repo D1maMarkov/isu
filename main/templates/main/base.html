@@ -1,0 +1,335 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>Документация</title>
+  <style>
+        .filters,
+    .search,
+    .table-section input,
+    .table-section .filters {
+    margin-bottom: 1rem;
+    display: flex;
+    gap: 0.5rem;
+    flex-wrap: wrap;
+    }
+
+    .filters input,
+    .filters select {
+    flex: 1 1 150px;  /* Элементы фильтра гибкие, но с минимальной шириной */
+    max-width: 150px;  /* Ограничиваем ширину */
+    height: 35px;  /* Высота остаётся постоянной */
+    padding: 0.4rem;
+    box-sizing: border-box;
+    }
+
+    .filters {
+    width: 100%;
+    }
+    body {
+      margin: 0;
+      font-family: sans-serif;
+      background-color: white;
+      color: black;
+    }
+    header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      padding: 1rem 2rem;
+      background-color: #e6f0fa;
+      border-bottom: 1px solid #ccc;
+    }
+    .menu {
+      display: flex;
+      gap: 1rem;
+    }
+    .menu a {
+      text-decoration: none;
+      color: black;
+      font-weight: bold;
+      padding: 0.3rem 0.6rem;
+      border-radius: 6px;
+    }
+    .menu a.active {
+      background-color: #d0e3fc;
+    }
+    .avatar {
+      width: 40px;
+      height: 40px;
+      background-color: #ccc;
+      border-radius: 50%;
+    }
+    .submenu {
+      display: flex;
+      justify-content: flex-end;
+      padding: 0.5rem 2rem;
+      background-color: #f1f1f1;
+      border-bottom: 1px solid #ccc;
+      gap: 1rem;
+    }
+    .submenu button {
+      background-color: transparent;
+      border: none;
+      font-weight: bold;
+      cursor: pointer;
+      padding: 0.3rem 0.6rem;
+      border-radius: 6px;
+    }
+    .submenu button a{
+      text-decoration: none;
+      color: black
+    }
+    .submenu button.active {
+      background-color: #d0e3fc;
+    }
+    main, section {
+      padding: 1rem 2rem;
+    }
+    table {
+      width: 100%;
+      border-collapse: collapse;
+      margin-bottom: 2rem;
+    }
+    th {
+      background-color: #d0e3fc;
+      padding: 0.5rem;
+      text-align: left;
+    }
+    td {
+      padding: 0.5rem;
+      border-top: 1px solid #ccc;
+    }
+    input, select, button {
+      padding: 0.5rem;
+      margin-right: 0.5rem;
+    }
+    dialog {
+      border: none;
+      border-radius: 8px;
+      padding: 1rem;
+    }
+    .table-section.active {
+      display: block;
+    }
+    .status-dropdown {
+  position: relative;
+  display: inline-block;
+}
+
+.status-dropdown button {
+  padding: 0.5rem 1rem;
+  font-size: 0.9rem;
+  cursor: pointer;
+}
+
+.status-dropdown ul {
+  position: absolute;
+  top: 100%;
+  left: 0;
+  z-index: 10;
+  background: white;
+  border: 1px solid #ccc;
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  width: 100%;
+}
+
+.status-dropdown ul li {
+  padding: 0.5rem;
+  cursor: pointer;
+}
+
+.status-dropdown ul li:hover {
+  background-color: #f0f0f0;
+}
+
+.hidden {
+  display: none;
+}
+
+.custom-dialog {
+  max-width: 400px;
+  width: 100%;
+  border: none;
+  border-radius: 10px;
+  padding: 1.5rem;
+  box-shadow: 0 4px 12px rgba(0,0,0,0.2);
+  font-family: sans-serif;
+}
+
+.custom-dialog h2 {
+  margin-top: 0;
+  font-size: 1.4rem;
+  color: #2c3e50;
+}
+
+.custom-dialog p {
+  margin-bottom: 1rem;
+  font-size: 0.95rem;
+  color: #555;
+}
+
+.dialog-buttons {
+  display: flex;
+  justify-content: flex-end;
+  gap: 0.5rem;
+  margin-top: 1rem;
+}
+
+.dialog-buttons button {
+  padding: 0.4rem 1rem;
+  border: none;
+  border-radius: 6px;
+  cursor: pointer;
+  font-weight: bold;
+}
+
+.dialog-buttons .primary {
+  background-color: #3b82f6;
+  color: white;
+}
+
+.dialog-buttons button:not(.primary) {
+  background-color: #e0e0e0;
+}
+
+
+.uploaded-section {
+  background-color: #f5f8ff;
+  padding: 0.75rem 1rem;
+  border: 1px solid #cbd5e1;
+  border-radius: 6px;
+  margin-bottom: 1rem;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+
+.uploaded-section a {
+  color: #2563eb;
+  text-decoration: none;
+  font-weight: 500;
+}
+
+.uploaded-section a:hover {
+  text-decoration: underline;
+}
+
+.delete-doc-btn {
+  background: transparent;
+  border: none;
+  font-size: 1.2rem;
+  font-weight: bold;
+  color: #999;
+  cursor: pointer;
+  padding: 0;
+  margin-left: 1rem;
+}
+
+.delete-doc-btn:hover {
+  color: #e11d48;
+}
+
+.custom-dialog {
+  width: 100%;
+  max-width: 420px;
+  border: none;
+  border-radius: 12px;
+  padding: 0;
+  box-shadow: 0 12px 24px rgba(0, 0, 0, 0.15);
+  font-family: sans-serif;
+  overflow: hidden;
+}
+
+.dialog-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  background-color: #f3f4f6;
+  padding: 1rem 1.25rem;
+  border-bottom: 1px solid #e5e7eb;
+}
+
+.dialog-header h2 {
+  margin: 0;
+  font-size: 1.2rem;
+  color: #1f2937;
+}
+
+.dialog-close {
+  background: none;
+  border: none;
+  font-size: 1.2rem;
+  cursor: pointer;
+  color: #9ca3af;
+}
+
+.form-styled {
+  padding: 1.25rem;
+  display: flex;
+  flex-direction: column;
+  gap: 1rem;
+}
+
+.form-field {
+  display: flex;
+  flex-direction: column;
+}
+
+.form-field label {
+  font-size: 0.9rem;
+  color: #374151;
+  margin-bottom: 0.25rem;
+}
+
+.form-field input {
+  padding: 0.5rem 0.75rem;
+  font-size: 1rem;
+  border: 1px solid #d1d5db;
+  border-radius: 6px;
+}
+
+.dialog-buttons {
+  display: flex;
+  justify-content: flex-end;
+  gap: 0.5rem;
+  margin-top: 1.5rem;
+}
+
+.dialog-buttons button {
+  padding: 0.5rem 1rem;
+  font-size: 0.95rem;
+  border-radius: 6px;
+  border: none;
+  cursor: pointer;
+}
+
+.dialog-buttons .primary {
+  background-color: #3b82f6;
+  color: white;
+}
+
+.dialog-buttons button:not(.primary) {
+  background-color: #e5e7eb;
+  color: #374151;
+}
+
+.material-actions, .product-actions {
+  display: flex;
+  gap: 0.75rem;
+  margin: 1rem 0; /* сверху и снизу отступ */
+}
+.dialog-body {
+  padding: 1.25rem;
+}
+
+</style>
+</head>
+<body>
+  {% block content %}
+  {% endblock %}
+</body>
+</html>

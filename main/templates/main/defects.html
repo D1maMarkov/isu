@@ -1,0 +1,247 @@
+{% extends "main/base.html" %}
+
+{%  block content %}
+<header>
+  <h1>Система управления</h1>
+  <div class="menu">
+    <a href="/warehouse/materials/">Склад</a>
+    <a href="/ceh/workers/" class="active">Цех</a>
+    <a href="/docs/">Документация</a>
+    <div class="avatar"></div>
+  </div>
+</header>
+
+  <!-- Подвкладки Цех -->
+  <div class="submenu" id="submenu-ceh">
+    <button data-target="workers"><a href="/ceh/workers/">Работники</a></button>
+    <button data-target="defects" class="active">Брак</button>
+  </div>
+
+  <!-- Цех -->
+  <section id="ceh">
+    <div class="table-section" id="defects">
+      <h2>Бракованные изделия</h2>
+      <div class="filters">
+        <input placeholder="Партия">
+        <input placeholder="Количество">
+        <input placeholder="Описание">
+      </div>
+
+      <div class="product-actions">
+        <button onclick="filterDefects()">Поиск</button>
+        <button onclick="document.getElementById('dialog-add-defect').showModal()">Добавить изделия</button>
+        <button>Изменить запись</button>
+        <button onclick="document.getElementById('dialog-delete-defect').showModal()">Удалить запись</button>
+        <button>Открыть</button>
+      </div>
+
+      <table>
+        <thead><tr><th>ID</th><th>Партия</th><th>Количество</th><th>Описание</th><th>Файл</th></tr></thead>
+        <tbody>
+          {% for d in defects %}
+          <tr><td>{{ d.id }}</td><td>{{ d.batch }}</td><td>{{ d.quantity }}</td><td>{{ d.description }}</td><td><button>Открыть</button></td></tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+  </section>
+
+  <!-- Диалог: Добавить -->
+  <dialog class="custom-dialog" id="dialog-add-defect">
+    <div class="dialog-header">
+      <h2>Добавление новой записи</h2>
+    </div>
+  
+    <form class="form-styled" onsubmit="performAddDef(event)">
+      <input type="text" id="add-def-batch" placeholder="Номер партии" required>
+      <input type="number" id="add-def-quantity" placeholder="Количество" required>
+      <input type="text" id="add-def-description" placeholder="Описание" required>
+  
+      <div class="dialog-buttons">
+        <button type="submit" class="primary">Добавить</button>
+        <button type="button" class="secondary" onclick="this.closest('dialog').close()">Закрыть</button>
+      </div>
+    </form>
+  </dialog>
+
+  <!-- Диалог: Подтверждение добавления -->
+<dialog class="custom-dialog" id="dialog-confirm-add-defect">
+  <div class="dialog-header">
+    <h2>Подтверждение добавления</h2>
+  </div>
+
+  <div class="form-styled">
+    <p>Вы уверены, что хотите добавить запись: <strong id="confirm-add-data"></strong>?</p>
+    <div class="dialog-buttons">
+      <button class="primary" onclick="addDef(event)">Да</button>
+      <button class="secondary" onclick="this.closest('dialog').close()">Нет</button>
+    </div>
+  </div>
+</dialog>
+
+
+ <!-- Диалог: Удалить -->
+ <dialog class="custom-dialog" id="dialog-delete-defect">
+  <div class="dialog-header">
+    <h2>Удаление записи</h2>
+  </div>
+
+  <form class="form-styled" onsubmit="performDeleteDef(event)">
+    <input type="number" id="delete-defect-id" placeholder="ID" required>
+
+    <div class="dialog-buttons">
+      <button type="submit" class="primary">Удалить</button>
+      <button type="button" class="secondary" onclick="this.closest('dialog').close()">Закрыть</button>
+    </div>
+  </form>
+</dialog>
+
+<!-- Диалог: Подтверждение удаления -->
+<dialog class="custom-dialog" id="dialog-confirm-delete-defect">
+<div class="dialog-header">
+  <h2>Подтверждение удаления</h2>
+</div>
+
+<div class="form-styled">
+  <p>Вы уверены, что хотите удалить запись с ID <strong id="confirm-delete-id"></strong>?</p>
+  <div class="dialog-buttons">
+    <button class="primary" onclick="deleteDef(event)">Да</button>
+    <button class="secondary" onclick="this.closest('dialog').close()">Нет</button>
+  </div>
+</div>
+</dialog>
+
+
+  <script>
+    function deleteDef(event){
+      event.preventDefault()
+      const id = document.getElementById("delete-defect-id").value.trim();
+      fetch(`/ceh/defects/delete/${id}/`, {
+        method: "DELETE",
+      }).then(response => {
+        if (response.status == 203){
+            const rows = document.querySelectorAll("tr")
+            rows.forEach(r => {
+              if (+r.cells[0].textContent === +id){
+                r.remove()
+              }
+            })
+
+            document.getElementById("dialog-delete-defect").querySelector("form").reset();
+            document.getElementById("dialog-confirm-delete-defect").close();
+          }
+        })
+    }
+    function performDeleteDef(event){
+      event.preventDefault();
+
+      const id = document.getElementById("delete-defect-id").value.trim();
+      fetch(`/ceh/defects/get/${id}/`).then(response => {
+        if (response.status == 200){
+          document.getElementById('confirm-delete-id').textContent = id;
+          document.getElementById('dialog-delete-defect').close();
+          document.getElementById('dialog-confirm-delete-defect').showModal();
+        }
+        if (response.status == 404){
+          return alert("Брак с таким ID не найден")
+        }
+      })
+    }
+
+
+
+
+    let pendingAddDef = null;
+
+    function addDef(event){
+      fetch(`/ceh/defects/add/`, {
+        method: "POST",
+        body: JSON.stringify(pendingAddDef)
+      }).then(response => {
+        if (response.status == 201){
+          response.json().then(d => {
+            d=d.defect;
+            const tbody = document.querySelector("tbody");
+            const row = document.createElement("tr");
+            console.log(d);
+            row.innerHTML = `<td>${d.id}</td><td>${d.batch}</td><td>${d.quantity}</td><td>${d.description}</td><td><button>Открыть</button></td>`;
+            tbody.appendChild(row);
+
+            document.getElementById("dialog-add-defect").querySelector("form").reset();
+            document.getElementById("dialog-confirm-add-defect").close();
+          })
+        }
+        if (response.status == 404){
+          response.json().then(r => {
+            return alert(r.message);
+          })
+        }
+      })
+    }
+    function performAddDef(event){
+      event.preventDefault();
+
+      const batch = document.getElementById("add-def-batch").value.trim();
+      const qty = document.getElementById("add-def-quantity").value.trim();
+      const desc = document.getElementById("add-def-description").value.trim();
+
+      pendingAddDef = {
+        batch: batch,
+        quantity: qty,
+        description: desc
+      }
+
+      document.getElementById('confirm-add-data').textContent = `
+        Партия: ${batch},
+        Количество: ${qty},
+        Описание: ${desc}
+      `;
+
+      document.getElementById('dialog-add-defect').close();
+      document.getElementById('dialog-confirm-add-defect').showModal();
+    }
+
+function removeUploadedDoc(button) {
+  const container = button.closest('.uploaded-section');
+  if (container) container.remove();
+}
+
+let pendingDocToDelete = null;
+
+function removeUploadedDoc(button) {
+  // Сохраняем элемент, который хотим удалить
+  pendingDocToDelete = button.closest('.uploaded-section');
+  // Показываем окно подтверждения
+  document.getElementById('dialog-confirm-delete-docfile').showModal();
+}
+
+function confirmRemoveUploaded() {
+  if (pendingDocToDelete) {
+    pendingDocToDelete.remove();
+    pendingDocToDelete = null;
+  }
+  document.getElementById('dialog-confirm-delete-docfile').close();
+}
+
+  function filterDefects(){
+    const id = document.querySelector(".filters").children[0].value;
+    const quantity = document.querySelector(".filters").children[1].value;
+    const description = document.querySelector(".filters").children[2].value;
+
+    fetch(`/ceh/defects/filter/?id=${id}&quantity=${quantity}&description=${description}`).then(response => {
+      if (response.status == 200){
+        response.json().then(res => {
+          const tbody = document.querySelector("tbody");
+          tbody.innerHTML = '';
+
+          res.defects.forEach(d => {
+            const row = document.createElement("tr");
+            row.innerHTML = `<td>${d.id}</td><td>${d.batch}</td><td>${d.quantity}</td><td>${d.description}</td><td><button>Открыть</button></td>`
+            tbody.appendChild(row)
+          });
+        })
+      }
+    })
+  }
+  </script>
+{% endblock  %}

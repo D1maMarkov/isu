@@ -1,0 +1,376 @@
+{% extends "main/base.html" %}
+
+{% block content %}
+<header>
+  <h1>Система управления</h1>
+  <div class="menu">
+    <a href="/warehouse/materials/">Склад</a>
+    <a href="/ceh/workers/">Цех</a>
+    <a href="/docs/" class="active">Документация</a>
+    <div class="avatar"></div>
+  </div>
+</header>
+  <!-- Документация -->
+  <main id="docs">
+    <h2>Документация</h2>
+        <div class="filters">
+            <div class="search">
+              <input type="text" placeholder="Поиск по ID заявки">
+              <input type="text" placeholder="Поиск по номеру партии">
+            </div>
+            
+              <select>
+                <option>Все статусы</option>
+                <option>Новое</option>
+                <option>В процессе</option>
+                <option>Завершено</option>
+              </select>
+          
+              <select>
+                <option>Все категории</option>
+                <option>Заявка</option>
+                <option>Задание</option>
+              </select>
+            </div>
+
+            <div style="display: flex; gap: 0.5rem; margin-bottom: 1rem;">
+              <button title="Применить фильтры поиска к заявкам"></buttontitle> Поиск</button>
+              <button title="Добавить новую заявку" onclick="document.getElementById('dialog-add-doc').showModal()">Добавить</button>
+              <button title="Редактировать существующую заявку по ID" onclick="document.getElementById('dialog-edit-doc-id').showModal()">Изменить</button>
+              <button title="Удалить заявку по ID с подтверждением" onclick="document.getElementById('dialog-delete-doc-id').showModal()">Удалить</button>
+            </div>
+          </div>
+    </div>
+
+    <table>
+      <thead>
+        <tr>
+          <th>ID заявки</th><th>Номер партии</th><th>Заявка</th>
+          <th>Дата загрузки</th><th>Категория</th><th>Результат</th><th>Обновлено</th>
+        </tr>
+      </thead>
+      <tbody>
+        {% for d in docs %}
+        <tr>
+          <td>{{ d.id }}</td><td>{{ d.batch }}</td><td><button title="Открыть загруженные документы заявки" onclick="document.getElementById('dialog-z').showModal()">Открыть</button></td>
+          <td>{{ d.created_at }}</td><td>{{ d.category }}</td><td><button title="Открыть результат заявки" onclick="document.getElementById('dialog-r').showModal()">Открыть</button></td><td>{{ d.updated_at }}</td>
+          {% endfor %}
+        </tr>
+      </tbody>
+    </table>
+    <dialog id="dialog-z" class="custom-dialog">
+      <div class="dialog-header">
+        <h2>Загруженные документы</h2>
+      </div>
+      <div class="dialog-body">
+        <div class="uploaded-section">
+          <a href="#" target="_blank" title="Скачать документ">Заявка на согласование объёма выпуска</a>
+          <button class="delete-doc-btn" onclick="removeUploadedDoc(this)">×</button>
+        </div>
+    
+        <hr>
+    
+        <p>Загрузите новую версию документа:</p>
+        <input type="file" accept=".doc,.docx">
+    
+        <div class="dialog-buttons">
+          <button class="primary">Отправить</button>
+          <button onclick="this.closest('dialog').close()">Закрыть</button>
+        </div>
+      </div>
+    </dialog>
+    <dialog id="dialog-r" class="custom-dialog">
+      <div class="dialog-header">
+        <h2>Загруженные документы</h2>
+      </div>
+      <div class="dialog-body">
+        <div class="uploaded-section">
+          <a href="#" target="_blank" title="Скачать документ">Результат анализа производственного процесса</a>
+          <button class="delete-doc-btn" onclick="removeUploadedDoc(this)">×</button>
+        </div>
+    
+        <hr>
+    
+        <p>Загрузите новый результат заявки:</p>
+        <input type="file" accept=".doc,.docx">
+    
+        <div class="dialog-buttons">
+          <button class="primary">Отправить</button>
+          <button onclick="this.closest('dialog').close()">Закрыть</button>
+        </div>
+      </div>
+    </dialog>
+    <dialog id="dialog-confirm-delete-docfile" class="custom-dialog">
+      <div class="dialog-header">
+        <h2>Подтверждение удаления</h2>
+      </div>
+      <div class="dialog-body">
+        <p>Вы уверены, что хотите удалить этот документ?</p>
+        <div class="dialog-buttons">
+          <button onclick="confirmRemoveUploaded()">Да</button>
+          <button onclick="document.getElementById('dialog-confirm-delete-docfile').close()">Нет</button>
+        </div>
+      </div>
+    </dialog>
+    
+    
+    <!-- Диалог для добавления заявки -->
+    <dialog id="dialog-add-doc" class="custom-dialog">
+      <div class="dialog-header">
+        <h2>Добавление заявки</h2>
+      </div>
+    
+      <form class="form-styled" onsubmit="addDoc(event)">
+        <div class="form-field">
+          <label for="add-doc-batch">Номер партии</label>
+          <input type="text" id="add-doc-batch" placeholder="П-001">
+        </div>
+    
+        <div class="form-field">
+          <label for="add-doc-category">Категория</label>
+          <select id="add-doc-category">
+            <option>Завяка</option>
+            <option>Задание</option>
+          </select>
+        </div>
+    
+        <div class="dialog-buttons">
+          <button type="submit" class="primary">Добавить</button>
+          <button type="button" onclick="this.closest('dialog').close()">Закрыть</button>
+        </div>
+      </form>
+    </dialog>
+
+
+    <!-- Подтверждение добавления заявки -->
+    <dialog id="dialog-confirm-add-doc" class="custom-dialog">
+      <div class="dialog-header">
+        <h2>Подтверждение добавления</h2>
+      </div>
+      <div class="form-styled">
+        <p>Вы уверены, что хотите добавить заявку: <strong id="confirm-add-doc-data"></strong>?</p>
+        <div class="dialog-buttons">
+          <button onclick="performAddDoc(event)">Да</button>
+          <button onclick="this.closest('dialog').close()">Нет</button>
+        </div>
+      </div>
+    </dialog>
+    
+    
+    <dialog id="dialog-edit-doc-id" class="custom-dialog">
+      <div class="dialog-header">
+        <h2>Редактирование заявки</h2>
+      </div>
+      <form class="form-styled">
+        <div class="form-field">
+          <label for="edit-doc-id-input">Введите ID заявки</label>
+          <input type="text" id="edit-doc-id-input" placeholder="Например, 0001">
+        </div>
+        <div class="dialog-buttons">
+          <button type="button" onclick="openEditDoc()">Продолжить</button>
+          <button type="button" onclick="this.closest('dialog').close()">Закрыть</button>
+        </div>
+      </form>
+    </dialog>
+    
+    <!-- Диалог для редактирования заявки -->
+    <dialog id="dialog-edit-doc-entry" class="custom-dialog">
+      <div class="dialog-header">
+        <h2>Редактирование записи</h2>
+      </div>
+      <form class="form-styled">
+        <div class="form-field">
+          <label for="edit-doc-batch">Номер партии</label>
+          <input type="text" id="edit-doc-batch" placeholder="П-125">
+        </div>
+    
+        <div class="form-field">
+          <label for="edit-doc-category">Категория</label>
+          <select id="edit-doc-category">
+            <option>Одежда</option>
+            <option>Аксессуары</option>
+            <option>Обувь</option>
+          </select>
+        </div>
+    
+        <div class="dialog-buttons">
+          <button type="submit" class="primary">Сохранить</button>
+          <button type="button" onclick="this.closest('dialog').close()">Закрыть</button>
+        </div>
+      </form>
+    </dialog>
+
+    <!-- Диалог: ввод ID заявки -->
+<dialog id="dialog-delete-doc-id" class="custom-dialog">
+  <div class="dialog-header">
+    <h2>Удаление заявки</h2>
+  </div>
+  <form class="form-styled">
+    <div class="form-field">
+      <label for="delete-doc-id">Введите ID заявки</label>
+      <input type="text" id="delete-doc-id" placeholder="Например, 0001">
+    </div>
+    <div class="dialog-buttons">
+      <button type="button" onclick="confirmDeleteDoc(event)">Удалить</button>
+      <button type="button" onclick="this.closest('dialog').close()">Закрыть</button>
+    </div>
+  </form>
+</dialog>
+
+<!-- Подтверждение удаления заявки -->
+<dialog id="dialog-confirm-delete-doc" class="custom-dialog">
+  <div class="dialog-header">
+    <h2>Подтверждение удаления</h2>
+  </div>
+  <div class="form-styled">
+    <p>Вы уверены, что хотите удалить заявку с ID: <strong id="confirm-delete-doc-id"></strong>?</p>
+    <div class="dialog-buttons">
+      <button onclick="performDeleteDoc(event)">Да</button>
+      <button onclick="document.getElementById('dialog-confirm-delete-doc').close()">Нет</button>
+    </div>
+  </div>
+</dialog>
+
+
+  </main>
+  </section>
+
+
+  <script>
+    let deleteDocId = null;
+
+    function confirmDeleteDoc(event){
+      event.preventDefault();
+      const id = document.getElementById("delete-doc-id").value.trim();
+
+      fetch(`/docs/get/${id}/`).then(response => {
+        if (response.status == 404){
+          return alert("Документ с ID не найден")
+        }
+        if (response.status == 200){
+          deleteDocId = id;
+
+          document.getElementById("confirm-delete-doc-id").textContent = id;
+          document.getElementById("dialog-confirm-delete-doc").showModal();
+        }
+      })
+    }
+  let pendigAddDoc = null;
+
+  function addDoc(event){
+    event.preventDefault();
+    const batch = document.getElementById("add-doc-batch").value.trim();
+    const category = document.getElementById("add-doc-category").value.trim();
+
+    pendigAddDoc = {
+      batch: batch,
+      category: category
+    }
+
+    document.getElementById('confirm-add-doc-data').textContent = `
+      Партия: ${batch},
+      Категория: ${category}
+    `;
+
+    document.getElementById("dialog-confirm-add-doc").showModal();
+  }
+
+  function performAddDoc(event){
+    event.preventDefault()
+
+    fetch(`/docs/add/`, {
+      method: "POST",
+      body: JSON.stringify(pendigAddDoc)
+    }).then(response => {
+      if (response.status == 201){
+        response.json().then(r => {
+          d = r.document;
+          const tbody = document.querySelector("tbody");
+          const row = document.createElement("tr");
+          row.innerHTML = `<td>${d.id}</td><td>${d.batch}</td><td><button title="Открыть загруженные документы заявки" onclick="document.getElementById('dialog-z').showModal()">Открыть</button><td>${d.created_at}</td><td>${d.category}</td><td><button title="Открыть результаты заявки" onclick="document.getElementById('dialog-z').showModal()">Открыть</button><td>${d.updated_at}</td>`;
+          tbody.appendChild(row);
+          document.getElementById('dialog-add-doc').querySelector('form').reset();
+          document.getElementById('dialog-add-doc').close()
+          document.getElementById('dialog-confirm-add-doc').close()
+        })
+      }
+      if (response.status == 404){
+        response.json().then(r => {
+          return alert(r.message)
+        })
+      }
+    })
+  }
+
+  function openEditDoc() {
+  const id = document.getElementById('edit-doc-id-input').value.trim();
+  if (!id) {
+    alert("Пожалуйста, введите ID заявки.");
+    return;
+  }
+
+  // Здесь можешь подключить подгрузку данных по ID
+  document.getElementById('dialog-edit-doc-id').close();
+  document.getElementById('dialog-edit-doc-entry').showModal();
+}
+
+
+
+function removeUploadedDoc(button) {
+  const container = button.closest('.uploaded-section');
+  if (container) container.remove();
+}
+
+
+function performDeleteDoc(event) {
+  event.preventDefault();
+  const id = document.getElementById('confirm-delete-doc-id').textContent;
+  console.log(`Удаление заявки с ID: ${id}`);
+  document.getElementById('dialog-confirm-delete-doc').close();
+  fetch(`/docs/delete/${id}/`, {method: "DELETE"}).then(response => {
+    if (response.status == 203){
+      alert(`Заявка с ID ${id} удалена.`);
+      const rows = document.querySelectorAll("tr");
+      rows.forEach(r => {
+        if (+r.cells[0].textContent === +id){
+          r.remove()
+        }
+      })
+    }
+  })
+}
+
+function removeUploadedDoc(button) {
+  const container = button.closest('.uploaded-section');
+  if (container) container.remove();
+}
+
+let pendingDocToDelete = null;
+
+function removeUploadedDoc(button) {
+  // Сохраняем элемент, который хотим удалить
+  pendingDocToDelete = button.closest('.uploaded-section');
+  // Показываем окно подтверждения
+  document.getElementById('dialog-confirm-delete-docfile').showModal();
+}
+
+function confirmRemoveUploaded() {
+  if (pendingDocToDelete) {
+    pendingDocToDelete.remove();
+    pendingDocToDelete = null;
+  }
+  document.getElementById('dialog-confirm-delete-docfile').close();
+}
+
+let currentEditRow = null;
+
+
+let pendingAdd = {};
+
+let pendingEdit = {};
+
+
+let pendingWorker = {};
+
+  </script>
+{% endblock %}

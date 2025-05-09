@@ -1,0 +1,245 @@
+{% extends "main/base.html" %}
+
+{% block content %}
+<header>
+  <h1>Система управления</h1>
+  <div class="menu">
+    <a href="/warehouse/materials/">Склад</a>
+    <a href="/ceh/workers/" class="active">Цех</a>
+    <a href="/docs/">Документация</a>
+    <div class="avatar"></div>
+  </div>
+</header>
+
+  <!-- Подвкладки Цех -->
+  <div class="submenu" id="submenu-ceh">
+    <button data-target="workers" class="active"><a href="/ceh/workers/">Работники</a></button>
+    <button data-target="defects"><a href="/ceh/defects/">Брак</a></button>
+  </div>
+
+  <!-- Цех -->
+  <section id="ceh">
+    <div class="table-section" id="workers">
+      <h2>Работники</h2>
+      <div class="filters">
+        <input placeholder="ID">
+        <input placeholder="ФИО">
+        <select>
+          <option>Все статусы</option>
+          <option>Активен</option>
+          <option>На паузе</option>
+        </select>
+        <input placeholder="Партия">
+      </div>
+
+      <div class="material-actions">
+        <button onclick="filterWorkers()">Поиск</button>
+        <button onclick="document.getElementById('dialog-add-worker').showModal()">Добавить строку</button>
+        <button onclick="document.getElementById('dialog-edit-fullname').showModal()">Редактировать ФИО</button>
+      </div>  
+
+      <table>
+        <thead>
+          <tr>
+            <th>ID</th>
+            <th>ФИО</th>
+            <th>Статус</th>
+            <th>Роль</th>
+            <th>Партия</th>
+            <th>Начало</th>
+            <th>Окончание</th>
+          </tr>
+        </thead>
+        <tbody>
+          {% for w in workers %}
+            <tr><td>{{ w.id }}</td><td>{{ w.fullname }}</td><td>{{ w.status }}</td><td>{{ w.role }}</td><td>{{ w.batch }}</td><td>{{ w.date_begin }}</td><td>{{ w.date_end }}</td></tr>
+          {% endfor %}
+        </tbody>
+      </table>  
+
+    </div>
+
+ <!-- Диалог добавления Диалог подтверждения -->
+ <dialog id="dialog-add-worker" class="custom-dialog">
+  <div class="dialog-header"><h2>Добавить работника</h2></div>
+  <form class="form-styled" onsubmit="addWorkerRow(event)">
+    <div class="form-field"><label>ФИО</label><input type="text" id="add-worker-name" required></div>
+    <div class="form-field"><label>Статус</label><input type="text" id="add-worker-status" required></div>
+    <div class="form-field"><label>Роль</label><input type="text" id="add-worker-role" required></div>
+    <div class="form-field"><label>Партия</label><input type="text" id="add-worker-batch" required></div>
+    <div class="form-field"><label>Начало</label><input type="date" id="add-worker-start" required></div>
+    <div class="form-field"><label>Окончание</label><input type="date" id="add-worker-end" required></div>
+    <div class="dialog-buttons">
+      <button type="submit" class="primary">Добавить</button>
+      <button type="button" onclick="this.closest('dialog').close()">Закрыть</button>
+    </div>
+  </form>
+</dialog>
+
+<dialog id="dialog-confirm-add-worker" class="custom-dialog">
+  <div class="dialog-header"><h2>Подтверждение добавления</h2></div>
+  <div class="form-styled">
+    <p>Добавить работника: <strong id="confirm-add-worker-data"></strong>?</p>
+    <div class="dialog-buttons">
+      <button onclick="performAddWorker()">Да</button>
+      <button onclick="document.getElementById('dialog-confirm-add-worker').close()">Нет</button>
+    </div>
+  </div>
+</dialog>
+
+  </section>
+
+  <!-- Диалог: редактирование ФИО -->
+  <dialog id="dialog-edit-fullname" class="custom-dialog">
+    <div class="dialog-header">
+      <h2>Редактирование ФИО</h2>
+    </div>
+
+    <form class="form-styled">
+      <div class="form-field"><input type="text" id="edit-fullname-id" placeholder="ID" required></div>
+      <div class="form-field"><input type="text" id="edit-fullname" placeholder="ФИО" required></div>
+      <div class="dialog-buttons">
+        <button type="button" onclick="confirmEditFullname(event)">Изменить</button>
+        <button type="button" onclick="this.closest('dialog').close()">Отмена</button>
+      </div>
+    </form>
+  </dialog>
+  
+  <!-- Диалог: подтверждение редактирования ФИО -->
+  <dialog id="dialog-confirm-edit-fullname" class="custom-dialog">
+    <div class="dialog-header"><h2>Подтверждение изменения</h2></div>
+    <div class="form-styled">
+      <p>Вы уверены, что хотите редактировать ФИО работника <strong id="confirm-edit-fullname-id"></strong>: <strong id="confirm-edit-fullname-data"></strong>?</p>
+      <div class="dialog-buttons">
+        <button onclick="editFullname(event)">Да</button>
+        <button onclick="this.closest('dialog').close()">Нет</button>
+      </div>
+    </div>
+  </dialog>
+  <script>
+
+let newFullname = null;
+let newFullnameId = null;
+  function confirmEditFullname(event){
+    event.preventDefault();
+    const id = document.getElementById('edit-fullname-id').value.trim();
+    fetch(`/ceh/workers/get/${id}`).then(response => {
+      if (response.status == 404){
+        return alert("Нет работника с таким ID")
+      }
+      if (response.status == 200){
+        newFullname = document.getElementById('edit-fullname').value.trim();
+        newFullnameId = id;
+        document.getElementById("confirm-edit-fullname-data").textContent = newFullname;
+        document.getElementById("confirm-edit-fullname-id").textContent = id;
+        document.getElementById('dialog-edit-fullname').close();
+        document.getElementById('dialog-confirm-edit-fullname').showModal(); 
+      }
+    })
+  }
+
+  function editFullname(event){
+    event.preventDefault();
+    fetch(`/ceh/workers/edit/${newFullnameId}`, {
+      method: "POST",
+      body: JSON.stringify({
+        fullname: newFullname
+      })
+    }).then(response => {
+        if (response.status == 202){
+          const rows = document.querySelectorAll('table tr');
+          rows.forEach(row => {
+            if (+row.cells[0].textContent === +newFullnameId) {
+              row.cells[1].textContent = newFullname;
+            }
+          });
+          
+          newFullname = null;
+          newFullnameId = null;
+          document.getElementById("dialog-edit-fullname").querySelector("form").reset();
+          document.getElementById("dialog-edit-fullname").close();
+          document.getElementById("dialog-confirm-edit-fullname").close()
+        }
+    })
+  }
+  
+
+  function openEditDoc() {
+  const id = document.getElementById('edit-doc-id-input').value.trim();
+  if (!id) {
+    alert("Пожалуйста, введите ID заявки.");
+    return;
+  }
+
+  // Здесь можешь подключить подгрузку данных по ID
+  document.getElementById('dialog-edit-doc-id').close();
+  document.getElementById('dialog-edit-doc-entry').showModal();
+}
+
+
+let pendingWorker = {};
+
+function addWorkerRow(e) {
+  e.preventDefault();
+  pendingWorker = {
+    fullname: document.getElementById('add-worker-name').value,
+    status: document.getElementById('add-worker-status').value,
+    batch: document.getElementById('add-worker-batch').value,
+    role: document.getElementById('add-worker-role').value,
+    start: document.getElementById('add-worker-start').value,
+    end: document.getElementById('add-worker-end').value
+  };
+
+  document.getElementById('confirm-add-worker-data').textContent =
+    `ФИО: ${pendingWorker.fullname}, Статус: ${pendingWorker.status}, Партия: ${pendingWorker.batch}, Роль: ${pendingWorker.role}, Начало: ${pendingWorker.start}, Окончание: ${pendingWorker.end}`;
+
+  document.getElementById('dialog-add-worker').close();
+  document.getElementById('dialog-confirm-add-worker').showModal();
+}
+
+function performAddWorker() {
+  const tbody = document.querySelector('#workers tbody');
+  const row = document.createElement('tr');
+  fetch(`/ceh/worker/add/`, {
+    method: "POST",
+    body: JSON.stringify({
+      fullname: pendingWorker.fullname,
+      status: pendingWorker.status,
+      batch: pendingWorker.batch,
+      role: pendingWorker.role,
+      date_begin: pendingWorker.start,
+      date_end: pendingWorker.end
+    })
+  }).then(response => {
+    if (response.status == 201){
+      response.json().then(w => {
+        w = w.worker
+        row.innerHTML = `<td>${w.id}</td><td>${w.fullname}</td><td>${w.status}</td><td>${w.batch}</td><td>${w.role}</td><td>${w.date_begin}</td><td>${w.date_end}</td>`;
+        tbody.appendChild(row);
+
+        document.getElementById('dialog-confirm-add-worker').close();
+      })
+    }
+  })
+}
+
+
+function filterWorkers() {
+  const id = document.querySelector(".filters").children[0].value;
+  const fullname = document.querySelector(".filters").children[1].value;
+  const status = document.querySelector(".filters").children[2].value;
+  const batch = document.querySelector(".filters").children[3].value;
+
+  fetch(`/ceh/workers/filter/?id=${id}&fullname=${fullname}&status=${status == "Все статусы" ? "" : status}&batch=${batch}`).then(response => response.json()).then(response => {
+    const tbody = document.querySelector("tbody");
+    tbody.innerHTML = '';
+    response.workers.forEach(w => {
+      const row = document.createElement('tr');
+      row.innerHTML = `<td>${w.id}</td><td>${w.fullname}</td><td>${w.status}</td><td>${w.batch}</td><td>${w.role}</td><td>${w.start}</td><td>${w.end}</td>`;
+      tbody.appendChild(row);
+    })
+  })
+}
+  </script>
+
+{% endblock %}

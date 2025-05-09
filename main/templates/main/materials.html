@@ -1,0 +1,576 @@
+{% extends "main/base.html" %}
+
+{% block content %}
+<header>
+  <h1>Система управления</h1>
+  <div class="menu">
+    <a href="/warehouse/materials/" class="active">Склад</a>
+    <a href="/ceh/workers/">Цех</a>
+    <a href="/docs/">Документация</a>
+    <div class="avatar"></div>
+  </div>
+</header>
+
+  <!-- Подвкладки Склад -->
+  <div class="submenu" id="submenu-sklad">
+    <button data-target="materials" class="active">Материалы</button>
+    <button data-target="products"><a href="/warehouse/products/">Готовые изделия</a></button>
+    <button data-target="overuse">Перерасход</button>
+  </div>
+
+  <!-- Склад -->
+
+  <!-- Диалог: удаление ввод ID -->
+  <dialog id="dialog-delete-material" class="custom-dialog">
+    <div class="dialog-header"><h2>Удаление материала</h2></div>
+    <form class="form-styled">
+      <div class="form-field"><input type="text" id="delete-mat-id" placeholder="ID материала" required></div>
+      <div class="dialog-buttons">
+        <button type="button" onclick="confirmDeleteMaterial()">Удалить</button>
+        <button type="button" onclick="this.closest('dialog').close()">Отмена</button>
+      </div>
+    </form>
+  </dialog>
+  
+  <dialog id="dialog-confirm-delete-material" class="custom-dialog">
+    <div class="dialog-header"><h2>Подтверждение удаления</h2></div>
+    <div class="form-styled">
+      <p>Вы уверены, что хотите удалить материал: <strong id="confirm-delete-mat"></strong>?</p>
+      <div class="dialog-buttons">
+        <button onclick="performDeleteMaterial()">Да</button>
+        <button onclick="document.getElementById('dialog-confirm-delete-material').close()">Нет</button>
+      </div>
+    </div>
+  </dialog>
+  
+  
+  <section id="sklad" style="display: block;">
+    <div class="table-section" id="materials" style="display: block;">
+      <h2>Материалы</h2>
+      <div class="filters">
+        <input placeholder="ID">
+        <input placeholder="Название">
+        <select id="sort-quantity">
+          <option value="">Количество</option>
+          <option value="asc">По возрастанию</option>
+          <option value="desc">По убыванию</option>
+        </select>
+        <input placeholder="Характеристики">
+        <select id="sort-price">
+          <option value="">Цена</option>
+          <option value="asc">По возрастанию</option>
+          <option value="desc">По убыванию</option>
+        </select>
+        <input placeholder="Поставщик">
+       </div>
+       <!-- Закрытие filters -->
+
+       <!-- Кнопки -->
+<div class="material-actions">
+  <button onclick="filterMaterials()">Поиск</button>
+  <button onclick="document.getElementById('dialog-add-material').showModal()">Добавить материал</button>
+  <button onclick="document.getElementById('dialog-edit-material-qty').showModal()">Изменить количество</button>
+  <button onclick="document.getElementById('dialog-edit-material-row-id').showModal()">Изменить строку</button>
+  <button onclick="document.getElementById('dialog-delete-material').showModal()">Удалить строку</button>
+</div>
+      <table>
+        <thead>
+          <tr>
+            <th>ID</th>
+            <th>Название</th>
+            <th>Характеристики</th>
+            <th>Количество</th>
+            <th>Цена</th>
+            <th>Поставщик</th>
+          </tr>
+        </thead>
+        <tbody id="materials-table-body">
+          {% for m in materials %}
+            <tr><td>{{ m.id }}</td><td>{{ m.name }}</td><td>{{ m.features }}</td><td>{{ m.quantity }}</td><td>{{ m.price }}</td><td>{{ m.supplier }}</td></tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    
+   <!-- Диалог: Добавить -->
+<dialog class="custom-dialog" id="dialog-add-material">
+  <div class="dialog-header">
+    <h2>Добавление новой записи</h2>
+  </div>
+
+  <form class="form-styled" onsubmit="performAddMaterial(event)">
+    <input type="text" id="mat-name" placeholder="Название" required>
+    <input type="text" id="mat-char" placeholder="Характеристики" required>
+    <input type="number" id="mat-qty" placeholder="Количество" required>
+    <input type="number" id="mat-price" placeholder="Цена" required>
+    <input type="text" id="mat-supplier" placeholder="Поставщик" required>
+    <div class="dialog-buttons">
+      <button type="submit" class="primary">Добавить</button>
+      <button type="button" class="secondary" onclick="this.closest('dialog').close()">Закрыть</button>
+    </div>
+  </form>
+</dialog>
+
+<!-- Диалог: Изменить количество -->
+<dialog class="custom-dialog" id="dialog-edit-material-qty">
+  <div class="dialog-header">
+    <h2>Изменить количество</h2>
+  </div>
+
+  <form class="form-styled" onsubmit="openEditMaterialQty(event)">
+    <input type="text" id="edit-mat-id-qty" placeholder="ID материала" required>
+    <input type="number" id="edit-mat-new-qty" placeholder="Новое количество" required>
+    <div class="dialog-buttons">
+      <button type="submit" class="primary">Сохранить</button>
+      <button type="button" class="secondary" onclick="this.closest('dialog').close()">Закрыть</button>
+    </div>
+  </form>
+</dialog>
+
+<!-- Диалог: Ввод ID для редактирования строки -->
+<dialog class="custom-dialog" id="dialog-edit-material-row-id">
+  <div class="dialog-header">
+    <h2>Изменить строку</h2>
+  </div>
+
+  <form class="form-styled">
+    <input type="text" id="edit-material-id" placeholder="Введите ID материала" required>
+    <div class="dialog-buttons">
+      <button type="button" class="primary" onclick="openEditMaterialRow()">Применить</button>
+      <button type="button" class="secondary" onclick="this.closest('dialog').close()">Закрыть</button>
+    </div>
+  </form>
+</dialog>
+
+<!-- Диалог: Редактирование строки -->
+<dialog class="custom-dialog" id="dialog-edit-material-form">
+  <h3>Редактирование строки</h3>
+  <form class="form-styled" onsubmit="saveMaterialEdit(event)">
+    <input type="text" id="edit-mat-name" placeholder="Название">
+    <input type="text" id="edit-mat-char" placeholder="Характеристики">
+    <input type="number" id="edit-mat-qty" placeholder="Количество">
+    <input type="number" id="edit-mat-price" placeholder="Цена">
+    <input type="text" id="edit-mat-supplier" placeholder="Поставщик">
+    <div class="dialog-buttons">
+      <button type="submit" class="primary">Сохранить</button>
+      <button type="button" class="secondary" onclick="this.closest('dialog').close()">Закрыть</button>
+    </div>
+  </form>
+</dialog>
+
+<!-- Диалог: Удалить -->
+<dialog class="custom-dialog" id="dialog-delete-material">
+  <h3>Удаление строки</h3>
+  <form class="form-styled">
+    <input type="text" id="delete-mat-id" placeholder="Введите ID материала" required>
+    <div class="dialog-buttons">
+      <button type="button" class="primary" onclick="confirmDeleteMaterial()">Удалить</button>
+      <button type="button" class="secondary" onclick="this.closest('dialog').close()">Отмена</button>
+    </div>
+  </form>
+</dialog>
+
+<!-- Диалог: Подтверждение удаления -->
+<dialog class="custom-dialog" id="dialog-confirm-delete-material">
+  <h3>Подтверждение удаления</h3>
+  <p>Вы уверены, что хотите удалить запись: <strong id="confirm-delete-material-id"></strong>?</p>
+  <div class="dialog-buttons">
+    <button class="primary" onclick="performDeleteMaterial()">Да</button>
+    <button class="secondary" onclick="document.getElementById('dialog-confirm-delete-material').close()">Нет</button>
+  </div>
+</dialog>
+    </div>
+
+    <!--  dialog: Добавить -->
+<dialog id="dialog-add-product" class="custom-dialog">
+  <div class="dialog-header"><h2>Добавление новой записи</h2></div>
+  <form class="form-styled" onsubmit="addProduct(event)">
+    <div class="form-field"><label>Номер партии</label><input type="text" id="product-batch"></div>
+    <div class="form-field"><label>Название</label><input type="text" id="product-name"></div>
+    <div class="form-field"><label>Размер</label><input type="text" id="product-size"></div>
+    <div class="form-field"><label>Количество</label><input type="number" id="product-qty"></div>
+    <div class="dialog-buttons">
+      <button class="primary" type="submit">Добавить</button>
+      <button type="button" onclick="this.closest('dialog').close()">Закрыть</button>
+    </div>
+  </form>
+</dialog>
+
+
+<!--  dialog: Изменить строку -->
+<dialog id="dialog-edit-row-id" class="custom-dialog">
+  <div class="dialog-header"><h2>Редактирование строки</h2></div>
+  <form class="form-styled">
+    <div class="form-field">
+      <label for="edit-row-id">Введите ID записи</label>
+      <input type="text" id="edit-row-id" placeholder="Например, 002" required>
+    </div>
+    <div class="dialog-buttons">
+      <button type="button" onclick="openEditRow()">Продолжить</button>
+      <button type="button" onclick="this.closest('dialog').close()">Закрыть</button>
+    </div>
+  </form>
+</dialog>
+
+<!--  dialog: Удалить — ввод -->
+<dialog id="dialog-delete-row-id" class="custom-dialog">
+  <div class="dialog-header"><h2>Удаление строки</h2></div>
+  <form class="form-styled">
+    <div class="form-field">
+      <label for="delete-row-id">Введите ID строки</label>
+      <input type="text" id="delete-row-id" placeholder="Например, 002" required>
+    </div>
+    <div class="dialog-buttons">
+      <button type="button" onclick="confirmDeleteRow()">Удалить</button>
+      <button type="button" onclick="this.closest('dialog').close()">Отмена</button>
+    </div>
+  </form>
+</dialog>
+
+
+<!--  dialog: Удалить — подтверждение -->
+<dialog id="dialog-confirm-delete-row" class="custom-dialog">
+  <div class="dialog-header"><h2>Подтверждение удаления</h2></div>
+  <div class="form-styled">
+    <p>
+      Удалить запись с ID <strong id="confirm-delete-row-id"></strong>?
+      <br><strong id="confirm-delete-row-data"></strong>
+    </p>
+        <div class="dialog-buttons">
+      <button onclick="performDeleteMaterial()">Да</button>
+      <button onclick="document.getElementById('dialog-confirm-delete-row').close()">Нет</button>
+    </div>
+  </div>
+</dialog>
+
+<!-- Подтверждение изменения -->
+<dialog id="dialog-confirm-edit-over" class="custom-dialog">
+  <div class="dialog-header"><h2>Подтверждение изменения</h2></div>
+  <div class="form-styled">
+    <p>Изменить строку: <strong id="confirm-edit-data"></strong>?</p>
+    <div class="dialog-buttons">
+      <button onclick="saveMaterialRowEdit(event)">Да</button>
+      <button onclick="document.getElementById('dialog-confirm-edit-over').close()">Нет</button>
+    </div>
+  </div>
+</dialog>
+
+<!--  dialog: добавить — подтверждение -->
+<dialog id="dialog-confirm-add-material" class="custom-dialog">
+  <div class="dialog-header"><h2>Подтверждение добавления</h2></div>
+  <div class="form-styled">
+    <p>Изменить: <strong id="confirm-add-material-data"></strong>?</p>
+    <div class="dialog-buttons">
+      <button onclick="addMaterial(event)">Да</button>
+      <button onclick="document.getElementById('dialog-confirm-add-material').close()">Нет</button>
+    </div>
+  </div>
+</dialog>
+
+<!--  dialog: Изменить строку — подтверждение -->
+<dialog id="dialog-confirm-edit-product-row" class="custom-dialog">
+  <div class="dialog-header"><h2>Подтверждение изменения</h2></div>
+  <div class="form-styled">
+    <p>Изменить строку ID <strong id="confirm-edit-row-id"></strong> с новыми данными?</p>
+    <strong id="confirm-edit-row-data"></strong>
+    <div class="dialog-buttons">
+      <button onclick="saveMaterialRowEdit(event)">Да</button>
+      <button onclick="document.getElementById('dialog-confirm-edit-product-row').close()">Нет</button>
+    </div>
+  </div>
+</dialog>
+
+<!-- Диалог: Подтверждение редактирование кол-ва -->
+<dialog class="custom-dialog" id="dialog-confirm-edit-material-qty">
+  <h3>Подтверждение изменения</h3>
+  <p>Вы уверены, что хотите изменить запись <strong id="confirm-edit-material-qty-id"></strong>: <strong id="confirm-edit-material-qty-qty"></strong>?</p>
+  <div class="dialog-buttons">
+    <button class="primary" onclick="editMaterialQty(event)">Да</button>
+    <button class="secondary" onclick="document.getElementById('dialog-confirm-delete-material').close()">Нет</button>
+  </div>
+</dialog>
+
+  </section>
+
+  <script>
+// Сортировка материалов
+document.getElementById('sort-quantity').addEventListener('change', sortMaterials);
+document.getElementById('sort-price').addEventListener('change', sortMaterials);
+
+let pendingMaterialAction = null;
+let pendingEditMaterialAction = null;
+
+function saveMaterialEdit(e) {
+  e.preventDefault();
+
+  pendingEditMaterialAction = {
+    row: editingRow,
+    name: document.getElementById('edit-mat-name').value,
+    features: document.getElementById('edit-mat-char').value,
+    quantity: document.getElementById('edit-mat-qty').value,
+    price: document.getElementById('edit-mat-price').value,
+    supplier: document.getElementById('edit-mat-supplier').value
+  };
+
+  document.getElementById('confirm-edit-row-id').textContent = pendingEditMaterialAction.id;
+  document.getElementById('confirm-edit-row-data').textContent =
+    `Название: ${pendingEditMaterialAction.name}, Характеристика: ${pendingEditMaterialAction.features}, Кол-во: ${pendingEditMaterialAction.quantity}, Цена: ${pendingEditMaterialAction.price}, Поставщик: ${pendingEditMaterialAction.supplier}`;
+
+  document.getElementById('dialog-confirm-edit-product-row').showModal();
+}
+
+function sortMaterials() {
+  const table = document.querySelector('#materials table tbody');
+  const rows = Array.from(table.querySelectorAll('tr'));
+  const sortByQty = document.getElementById('sort-quantity').value;
+  const sortByPrice = document.getElementById('sort-price').value;
+
+  rows.sort((a, b) => {
+    const qtyA = parseInt(a.cells[2].textContent);
+    const qtyB = parseInt(b.cells[2].textContent);
+    const priceA = parseInt(a.cells[4].textContent);
+    const priceB = parseInt(b.cells[4].textContent);
+
+    // Сначала сортировка по количеству
+    if (sortByQty) {
+      return sortByQty === 'asc' ? qtyA - qtyB : qtyB - qtyA;
+    }
+
+    // Затем по цене
+    if (sortByPrice) {
+      return sortByPrice === 'asc' ? priceA - priceB : priceB - priceA;
+    }
+
+    return 0;
+  });
+
+  // Перестраиваем таблицу
+  rows.forEach(row => table.appendChild(row));
+}
+
+
+let editingRow = null;
+let pendingMaterialToDelete = null;
+
+function performAddMaterial(e) {
+  e.preventDefault();
+  pendingMaterialAction = {
+    name: document.getElementById('mat-name').value,
+    features: document.getElementById('mat-char').value,
+    quantity: document.getElementById('mat-qty').value,
+    price: document.getElementById('mat-price').value,
+    supplier: document.getElementById('mat-supplier').value
+  };
+
+  const text = `
+    Название: ${pendingMaterialAction.name},
+    Характеристика: ${pendingMaterialAction.char},
+    Кол-во: ${pendingMaterialAction.qty},
+    Цена: ${pendingMaterialAction.price},
+    Поставщик: ${pendingMaterialAction.supplier}
+  `;
+
+  console.log(text)
+
+  document.getElementById('confirm-add-material-data').textContent = text;
+  document.getElementById('dialog-confirm-add-material').showModal();
+}
+
+function addMaterial(e) {
+  const tbody = document.getElementById('materials-table-body');
+
+  fetch("/materials/add", {
+    method: "POST",
+    headers: {
+                'Accept': 'application/json',
+                'X-Requested-With': 'XMLHttpRequest',
+            },
+    body: JSON.stringify(pendingMaterialAction)
+  }).then(response => {
+    if (response.status == 201){
+      response.json().then(
+        m => {
+          const row = document.createElement('tr');
+          m = m.materials;
+          row.innerHTML = `<td>${m.id}</td><td>${m.name}</td><td>${m.features}</td><td>${m.quantity}</td><td>${m.price}</td><td>${m.supplier}</td>`;
+          tbody.appendChild(row);
+          document.getElementById('dialog-add-material').querySelector("form").reset()
+          document.getElementById('dialog-add-material').close()
+          document.getElementById('dialog-confirm-add-material').close()
+        }
+      )
+    }
+  })
+}
+
+function openEditMaterial() {
+  const id = document.getElementById('edit-row-id').value.trim();
+  const rows = document.querySelectorAll('#products-table-body tr');
+  editingRow = null;
+
+  rows.forEach(row => {
+    if (+row.cells[0].textContent === +id) {
+      editingRow = row;
+    }
+  });
+
+  if (!editingRow) {
+    alert("Запись с таким ID не найдена.");
+    return;
+  }
+
+  document.getElementById('edit-batch').value = editingRow.cells[1].textContent;
+  document.getElementById('edit-name-full').value = editingRow.cells[2].textContent;
+  document.getElementById('edit-size').value = editingRow.cells[3].textContent;
+  document.getElementById('edit-qty-full').value = editingRow.cells[4].textContent;
+
+  document.getElementById('dialog-edit-row-id').close();
+  document.getElementById('dialog-edit-row-form').showModal();
+}
+
+let editingRowQty = null;
+let newQty = null;
+
+
+function openEditMaterialQty(event) {
+  event.preventDefault();
+  const id = document.getElementById('edit-mat-id-qty').value.trim();
+  const qty = document.getElementById('edit-mat-new-qty').value.trim();
+  newQty = qty;
+
+  const text = `
+    Кол-во: ${qty}
+  `;
+
+  document.getElementById('confirm-edit-material-qty-qty').textContent = text;
+  document.getElementById('confirm-edit-material-qty-id').textContent = id;
+  document.getElementById('dialog-confirm-edit-material-qty').showModal();
+}
+
+
+function editMaterialQty(e) {
+  e.preventDefault();
+  const id = document.getElementById('edit-mat-id-qty').value.trim();
+
+  const rows = document.querySelectorAll('#materials-table-body tr');
+  fetch(`/materials/edit/${id}`, {
+    method: "POST",
+    body: JSON.stringify({
+      quantity: newQty
+    })
+  }).then(response => {
+    if (response.status == 404){
+      return alert("Материал с таким ID не найден.");
+    }
+    if (response.status == 202){
+      rows.forEach(row => {
+        if (+row.cells[0].textContent === +id) {
+          row.cells[3].textContent = newQty;
+        }
+      });
+      e.target.closest('dialog').close();
+      document.getElementById('dialog-edit-material-qty').querySelector('form').reset();
+      document.getElementById('dialog-edit-material-qty').close();
+    }
+  })
+}
+
+function openEditMaterialRow() {
+  const id = document.getElementById('edit-material-id').value.trim();
+  const rows = document.querySelectorAll('#materials-table-body tr');
+  fetch(`/materials/get/${id}`).then(response => {
+    if (response.status == 404){
+      return alert("Запись не найдена");
+    }
+    else if (response.status == 200){
+      editingRow = null;
+      rows.forEach(row => {
+        if (+row.cells[0].textContent === +id) editingRow = row;
+      });
+      if (!editingRow) return alert("Запись не найдена");
+      document.getElementById('edit-mat-name').value = editingRow.cells[1].textContent;
+      document.getElementById('edit-mat-char').value = editingRow.cells[2].textContent;
+      document.getElementById('edit-mat-qty').value = editingRow.cells[3].textContent;
+      document.getElementById('edit-mat-price').value = editingRow.cells[4].textContent;
+      document.getElementById('edit-mat-supplier').value = editingRow.cells[5].textContent;
+      document.getElementById('dialog-edit-material-row-id').close();
+      document.getElementById('dialog-edit-material-form').showModal();
+    }
+  })
+}
+
+function saveMaterialRowEdit(e) {
+  e.preventDefault();
+  if (!editingRow) return;
+  const id = editingRow.cells[0].textContent;
+  fetch(`/materials/edit/${id}`, {
+    method: "POST",
+    body: JSON.stringify({
+      name: pendingEditMaterialAction.name,
+      features: pendingEditMaterialAction.features,
+      quantity: pendingEditMaterialAction.quantity,
+      price: pendingEditMaterialAction.price,
+      supplier: pendingEditMaterialAction.supplier
+    })
+  }).then(response => {
+    if (response.status == 202){
+      editingRow.cells[1].textContent = pendingEditMaterialAction.name;
+      editingRow.cells[2].textContent = pendingEditMaterialAction.features;
+      editingRow.cells[3].textContent = pendingEditMaterialAction.quantity;
+      editingRow.cells[4].textContent = pendingEditMaterialAction.price;
+      editingRow.cells[5].textContent = pendingEditMaterialAction.supplier;
+      document.getElementById('dialog-edit-material-form').close();
+      document.getElementById('dialog-confirm-edit-product-row').close();
+      editingRow = null;
+    }
+  })
+}
+
+function confirmDeleteMaterial() {
+  const id = document.getElementById('delete-mat-id').value.trim();
+  const rows = document.querySelectorAll('#materials-table-body tr');
+  pendingMaterialToDelete = null;
+  fetch(`/materials/get/${id}`).then(response => {
+    if (response.status == 404){
+      return alert("Не найдено");
+    }
+    else if (response.status == 200){
+      rows.forEach(row => {
+        if (+row.cells[0].textContent === +id) pendingMaterialToDelete = row;
+      });
+      document.getElementById('confirm-delete-material-id').textContent = id;
+      document.getElementById('dialog-delete-material').close();
+      document.getElementById('dialog-confirm-delete-material').showModal();
+    }
+  })
+}
+
+function performDeleteMaterial() {
+  if (pendingMaterialToDelete){
+    pendingMaterialToDelete.remove();
+    const id = pendingMaterialToDelete.cells[0].textContent;
+
+    document.getElementById('dialog-confirm-delete-material').close();
+    fetch(`/materials/delete/?id=${id}`, {method: "DELETE"})
+  }
+}
+
+function filterMaterials() {
+  const id = document.querySelector(".filters").children[0].value;
+  const name = document.querySelector(".filters").children[1].value;
+  const quanity_order = document.querySelector(".filters").children[2].value;
+  const features = document.querySelector(".filters").children[3].value;
+  const price_order = document.querySelector(".filters").children[4].value;
+  const supplier = document.querySelector(".filters").children[5].value;
+
+  fetch(`/materials/filter/?id=${id}&name=${name}&quantity_order=${quanity_order}&features=${features}&price_order=${price_order}&supplier=${supplier}`).then(response => response.json()).then(response => {
+    const tbody = document.getElementById('materials-table-body');
+    tbody.innerHTML = '';
+    response.materials.forEach(m => {
+      const row = document.createElement('tr');
+      row.innerHTML = `<td>${m.id}</td><td>${m.name}</td><td>${m.features}</td><td>${m.quantity}</td><td>${m.price}</td><td>${m.supplier}</td>`;
+      tbody.appendChild(row);
+    })
+  })
+}
+  </script>
+{% endblock %}

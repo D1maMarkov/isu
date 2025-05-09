@@ -1,5 +1,5 @@
 {% extends "main/base.html" %}
-
+{% load static %}
 {% block content %}
   <header>
     <h1>Система управления</h1>
@@ -7,7 +7,7 @@
       <a href="/warehouse/materials/" class="active">Склад</a>
       <a href="/ceh/workers/">Цех</a>
       <a href="/docs/">Документация</a>
-      <div class="avatar"></div>
+      <div class="avatar"><img src="{% static 'main/shutdown.png' %}" /></div>
     </div>
   </header>
 
@@ -379,7 +379,7 @@ function addProduct() {
                         <td>${p.product_name}</td>
                         <td>${p.size}</td>
                         <td>${p.quantity_product}</td>`;
-        tbody.appendChild(row);
+        tbody.prepend(row);
 
         document.getElementById('dialog-confirm-add-product').close();
         document.getElementById('dialog-add-product').close();

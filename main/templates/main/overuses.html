@@ -1,5 +1,5 @@
 {% extends "main/base.html" %}
-
+{% load static %}
 {% block content %}
 <header>
   <h1>Система управления</h1>
@@ -7,7 +7,7 @@
     <a href="/warehouse/materials/" class="active">Склад</a>
     <a href="/ceh/workers/">Цех</a>
     <a href="/docs/">Документация</a>
-    <div class="avatar"></div>
+    <div class="avatar"><img src="{% static 'main/shutdown.png' %}" /></div>
   </div>
 </header>
 
@@ -202,7 +202,7 @@ function performAddOver() {
     if (response.status == 201){
       response.json().then(o => {
         row.innerHTML = `<td>${o.batch}</td><td>${o.material}</td><td>${o.quantity}</td>`;
-        tbody.appendChild(row);
+        tbody.prepend(row);
 
         document.getElementById('dialog-confirm-add-over').close();
         document.querySelector('#dialog-add-over form').reset();

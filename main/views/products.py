@@ -47,7 +47,7 @@ def get_product(request: HttpRequest, id: str):
 @csrf_exempt
 def edit_product(request: HttpRequest, id: str):
     id = int(id)
-    print(id)
+
     p = get_object_or_404(Products, id=id)
     d=json.loads(request.body)
     if "batch" in d: 
@@ -80,6 +80,6 @@ def filter_products(request: HttpRequest):
     if d["size"]:
         filters &= Q(size=d["size"])
 
-    products = Products.objects.filter(filters).order_by(*order_by)
+    products = Products.objects.filter(filters).order_by(*order_by, "-id")
 
     return JsonResponse({"products": FinishedProductsSerializer(products, many=True).data})

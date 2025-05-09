@@ -64,7 +64,6 @@ def edit_material(request: HttpRequest, id: str):
 def filter_defects(request: HttpRequest):
     d = request.GET
     filters = Q()
-    order_by = []
     if d["id"]:
         filters &= Q(id=d["id"])
     if d["quantity"]:
@@ -72,6 +71,6 @@ def filter_defects(request: HttpRequest):
     if d["description"]:
         filters &= Q(description=d["description"])
     
-    defects = Defects.objects.filter(filters)
+    defects = Defects.objects.filter(filters).order_by("-id")
 
     return JsonResponse({"defects": DefectSerializer(defects, many=True).data})

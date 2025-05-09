@@ -1,5 +1,5 @@
 {% extends "main/base.html" %}
-
+{% load static %}
 {% block content %}
 <header>
   <h1>Система управления</h1>
@@ -7,34 +7,27 @@
     <a href="/warehouse/materials/">Склад</a>
     <a href="/ceh/workers/">Цех</a>
     <a href="/docs/" class="active">Документация</a>
-    <div class="avatar"></div>
+    <div class="avatar"><img src="{% static 'main/shutdown.png' %}" /></div>
   </div>
 </header>
   <!-- Документация -->
   <main id="docs">
     <h2>Документация</h2>
         <div class="filters">
-            <div class="search">
               <input type="text" placeholder="Поиск по ID заявки">
               <input type="text" placeholder="Поиск по номеру партии">
-            </div>
-            
-              <select>
-                <option>Все статусы</option>
-                <option>Новое</option>
-                <option>В процессе</option>
-                <option>Завершено</option>
-              </select>
           
               <select>
                 <option>Все категории</option>
                 <option>Заявка</option>
                 <option>Задание</option>
+                <option>тех. Задание</option>
+                <option>Заказ</option>
               </select>
             </div>
 
             <div style="display: flex; gap: 0.5rem; margin-bottom: 1rem;">
-              <button title="Применить фильтры поиска к заявкам"></buttontitle> Поиск</button>
+              <button title="Применить фильтры поиска к заявкам" onclick="filterDocs()">Поиск</button>
               <button title="Добавить новую заявку" onclick="document.getElementById('dialog-add-doc').showModal()">Добавить</button>
               <button title="Редактировать существующую заявку по ID" onclick="document.getElementById('dialog-edit-doc-id').showModal()">Изменить</button>
               <button title="Удалить заявку по ID с подтверждением" onclick="document.getElementById('dialog-delete-doc-id').showModal()">Удалить</button>
@@ -129,8 +122,10 @@
         <div class="form-field">
           <label for="add-doc-category">Категория</label>
           <select id="add-doc-category">
-            <option>Завяка</option>
+            <option>Заявка</option>
             <option>Задание</option>
+            <option>тех. Задание</option>
+            <option>Заказ</option>
           </select>
         </div>
     
@@ -288,7 +283,7 @@
           const tbody = document.querySelector("tbody");
           const row = document.createElement("tr");
           row.innerHTML = `<td>${d.id}</td><td>${d.batch}</td><td><button title="Открыть загруженные документы заявки" onclick="document.getElementById('dialog-z').showModal()">Открыть</button><td>${d.created_at}</td><td>${d.category}</td><td><button title="Открыть результаты заявки" onclick="document.getElementById('dialog-z').showModal()">Открыть</button><td>${d.updated_at}</td>`;
-          tbody.appendChild(row);
+          tbody.prepend(row);
           document.getElementById('dialog-add-doc').querySelector('form').reset();
           document.getElementById('dialog-add-doc').close()
           document.getElementById('dialog-confirm-add-doc').close()
@@ -368,9 +363,24 @@ let currentEditRow = null;
 let pendingAdd = {};
 
 let pendingEdit = {};
+    function filterDocs(){
+      const id = document.querySelector(".filters").children[0].value;
+      const batch = document.querySelector(".filters").children[1].value;
+      const category = document.querySelector(".filters").children[2].value;
 
-
-let pendingWorker = {};
-
+      fetch(`/docs/filter/?id=${id}&batch=${batch}&category=${category === 'Все категории' ? '' : category}`).then(response => {
+        if (response.status == 200){
+          response.json().then(response => {
+            const tbody = document.querySelector('tbody');
+            tbody.innerHTML = '';
+            response.documents.forEach(d => {
+              const row = document.createElement("tr");
+              row.innerHTML = `<td>${d.id}</td><td>${d.batch}</td><td><button title="Открыть загруженные документы заявки" onclick="document.getElementById('dialog-z').showModal()">Открыть</button><td>${d.created_at}</td><td>${d.category}</td><td><button title="Открыть результаты заявки" onclick="document.getElementById('dialog-z').showModal()">Открыть</button><td>${d.updated_at}</td>`;
+              tbody.appendChild(row)
+            })
+          })
+        }
+      })
+    }
   </script>
 {% endblock %}

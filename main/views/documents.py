@@ -2,6 +2,8 @@ import json
 from django.http import HttpRequest, HttpResponse, JsonResponse
 from django.shortcuts import get_object_or_404
 from django.views import View
+from entities.user import UserRole
+from main.views.base import BaseView
 from main.serializers import DocumentSerializer, MaterialsSerializer
 from main.models import Batch, DocumentManagement as Document
 from django.utils.decorators import method_decorator
@@ -22,22 +24,23 @@ class CreateDoc(View):
         return JsonResponse({"document": DocumentSerializer(doc).data}, status=201)
 
 
-@csrf_exempt
-def delete_document(request: HttpRequest, id: int):
-    if request.method == "DELETE":
+@method_decorator(csrf_exempt, name="dispatch")
+class DeleteDoc(View):
+    def delete(self, request: HttpRequest, id: int):
         try:
             Document.objects.get(id=int(id)).delete()
         except Document.DoesNotExist:
             return HttpResponse(status=404)
         return HttpResponse(status=203)
-    
-    return HttpRequest(status=403)
 
 
-def get_document(request: HttpRequest, id: str):
-    id = int(id)
-    material = get_object_or_404(Document, id=id)
-    return JsonResponse({"document": DocumentSerializer(material).data})
+class GetDocument(BaseView):
+    enable_roles = [UserRole.Designer, UserRole.Sewer]
+
+    def get(self, request: HttpRequest, id: str):
+        id = int(id)
+        material = get_object_or_404(Document, id=id)
+        return JsonResponse({"document": DocumentSerializer(material).data})
 
 @csrf_exempt
 def edit_material(request: HttpRequest, id: str):
@@ -60,29 +63,29 @@ def edit_material(request: HttpRequest, id: str):
     return HttpResponse(status=202)
 
 
-def filter_materials(request: HttpRequest):
-    d = request.GET
-    filters = Q()
-    order_by = []
-    if d["id"]:
-        filters &= Q(id=d["id"])
-    if d["name"]:
-        filters &= Q(name=["name"])
-    if d["quantity_order"]:
-        if d["quantity_order"] == "asc":
-            order_by.append("quantity_material")
-        else:
-            order_by.append("-quantity_material")
-    if d["price_order"]:
-        if d["price_order"] == "asc":
-            order_by.append("price")
-        else:
-            order_by.append("-price")
-    if d["features"]:
-        filters &= Q(features=d["features"])
-    if d["supplier"]:
-        filters &= Q(supplier=d["supplier"])
-    
-    materials = Materials.objects.filter(filters).order_by(*order_by)
+class FilterDocs(BaseView):
+    enable_roles = [UserRole.Designer, UserRole.Sewer, UserRole.PatternDesigner, UserRole.PackerInspector, UserRole.Cutter]
 
-    return JsonResponse({"materials": MaterialsSerializer(materials, many=True).data})
+    def get(self, request: HttpRequest):
+        d = request.GET
+        filters = Q()
+        if request.user.role in [UserRole.Designer, UserRole.PatternDesigner]:
+            filters &= Q(category="Задание")
+
+        if request.user.role in [UserRole.Sewer, UserRole.PackerInspector]:
+            filters &= Q(category="тех. Задание")
+
+        if request.user.role in [UserRole.Cutter]:
+            filters &= (Q(category="тех. Задание") | Q(category="Заказ"))
+
+        print(d)
+        if d["id"]:
+            filters &= Q(id=d["id"])
+        if d["batch"]:
+            filters &= Q(batch_id=d["batch"])
+        if d["category"]:
+            filters &= Q(category=d["category"])
+
+        docs = Document.objects.filter(filters).order_by("-id")
+
+        return JsonResponse({"documents": DocumentSerializer(docs, many=True).data})

@@ -1,5 +1,5 @@
 {% extends "main/base.html" %}
-
+{% load static %}
 {% block content %}
 <header>
   <h1>Система управления</h1>
@@ -7,7 +7,7 @@
     <a href="/warehouse/materials/">Склад</a>
     <a href="/ceh/workers/" class="active">Цех</a>
     <a href="/docs/">Документация</a>
-    <div class="avatar"></div>
+    <div class="avatar"><img src="{% static 'main/shutdown.png' %}" /></div>
   </div>
 </header>
 
@@ -35,7 +35,7 @@
       <div class="material-actions">
         <button onclick="filterWorkers()">Поиск</button>
         <button onclick="document.getElementById('dialog-add-worker').showModal()">Добавить строку</button>
-        <button onclick="document.getElementById('dialog-edit-fullname').showModal()">Редактировать ФИО</button>
+        <!-- <button onclick="document.getElementById('dialog-edit-fullname').showModal()">Редактировать ФИО</button> -->
       </div>  
 
       <table>
@@ -63,9 +63,12 @@
  <dialog id="dialog-add-worker" class="custom-dialog">
   <div class="dialog-header"><h2>Добавить работника</h2></div>
   <form class="form-styled" onsubmit="addWorkerRow(event)">
-    <div class="form-field"><label>ФИО</label><input type="text" id="add-worker-name" required></div>
+    <div class="form-field"><label>Пользователь</label><select id="add-worker-user" required>
+      {% for u in users %}
+      <option value="{{u.id}}">{{ u }}</option>
+      {% endfor %}
+    </select></div>
     <div class="form-field"><label>Статус</label><input type="text" id="add-worker-status" required></div>
-    <div class="form-field"><label>Роль</label><input type="text" id="add-worker-role" required></div>
     <div class="form-field"><label>Партия</label><input type="text" id="add-worker-batch" required></div>
     <div class="form-field"><label>Начало</label><input type="date" id="add-worker-start" required></div>
     <div class="form-field"><label>Окончание</label><input type="date" id="add-worker-end" required></div>
@@ -181,17 +184,18 @@ let pendingWorker = {};
 
 function addWorkerRow(e) {
   e.preventDefault();
+  const select = document.getElementById("add-worker-user");
+  const workerString = select.querySelectorAll("option")[select.selectedIndex].text
   pendingWorker = {
-    fullname: document.getElementById('add-worker-name').value,
+    user: select.value,
     status: document.getElementById('add-worker-status').value,
     batch: document.getElementById('add-worker-batch').value,
-    role: document.getElementById('add-worker-role').value,
-    start: document.getElementById('add-worker-start').value,
-    end: document.getElementById('add-worker-end').value
+    date_begin: document.getElementById('add-worker-start').value,
+    date_end: document.getElementById('add-worker-end').value
   };
 
   document.getElementById('confirm-add-worker-data').textContent =
-    `ФИО: ${pendingWorker.fullname}, Статус: ${pendingWorker.status}, Партия: ${pendingWorker.batch}, Роль: ${pendingWorker.role}, Начало: ${pendingWorker.start}, Окончание: ${pendingWorker.end}`;
+    `Пользователь: ${workerString}, Статус: ${pendingWorker.status}, Партия: ${pendingWorker.batch}, Начало: ${pendingWorker.date_begin}, Окончание: ${pendingWorker.date_end}`;
 
   document.getElementById('dialog-add-worker').close();
   document.getElementById('dialog-confirm-add-worker').showModal();
@@ -202,22 +206,21 @@ function performAddWorker() {
   const row = document.createElement('tr');
   fetch(`/ceh/worker/add/`, {
     method: "POST",
-    body: JSON.stringify({
-      fullname: pendingWorker.fullname,
-      status: pendingWorker.status,
-      batch: pendingWorker.batch,
-      role: pendingWorker.role,
-      date_begin: pendingWorker.start,
-      date_end: pendingWorker.end
-    })
+    body: JSON.stringify(pendingWorker)
   }).then(response => {
     if (response.status == 201){
       response.json().then(w => {
         w = w.worker
         row.innerHTML = `<td>${w.id}</td><td>${w.fullname}</td><td>${w.status}</td><td>${w.batch}</td><td>${w.role}</td><td>${w.date_begin}</td><td>${w.date_end}</td>`;
-        tbody.appendChild(row);
+        tbody.prepend(row);
 
         document.getElementById('dialog-confirm-add-worker').close();
+      })
+    }
+
+    if (response.status == 404){
+      response.json().then(r => {
+        return alert(r.message);
       })
     }
   })

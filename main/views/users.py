@@ -1,35 +1,43 @@
 from datetime import datetime
 import json
-from django.http import HttpRequest, JsonResponse
+from django.http import HttpRequest, HttpResponse, JsonResponse
 from django.shortcuts import get_object_or_404
 from django.views import View
-
+from django.contrib.auth import authenticate, login
 from main.serializers import WorkerSerializer
 from utils.security.password_hasher import PasswordHasher
-from main.models import Batch, User
+from main.models import Batch, User, Worker
 from django.utils.decorators import method_decorator
 from django.views.decorators.csrf import csrf_exempt
 from django.db.models import Q
 from slugify import slugify
 import string
 import random
+from django.contrib.auth import logout
+from django.shortcuts import redirect
 
 
+@method_decorator(csrf_exempt, name="dispatch")
 class Login(View):
-    password_hasher = PasswordHasher()
-    
-    def get(self, login: str, password: str):
+    def post(self, request: HttpRequest):
+        d = json.loads(request.body)
         try:
-            user = User.objects.get(login=login)
+            user = User.objects.get(login=d["login"])
         except User.DoesNotExist:
             return JsonResponse({"message": "Нет пользователя с таким логином"}, status=404)
         
-        hashed_password = self.password_hasher.hash_password(password)
-        if user.hash_password == hashed_password:
-            self.request.auth(user)
+        if user.password != d["password"]:
+            return JsonResponse({"message": "Неверный пароль"}, status=400)
         
-        return JsonResponse({"message": "Неверный пароль"}, status=400)
+        user = authenticate(**d)
+        login(request, user)
+        
+        return HttpResponse(status=200)
 
+
+def logout_view(request: HttpRequest):
+    logout(request)
+    return redirect("/docs/")
 
 @method_decorator(csrf_exempt, name="dispatch")
 class CreateWorker(View):
@@ -45,20 +53,19 @@ class CreateWorker(View):
     def post(self, request: HttpRequest):
         d = json.loads(request.body)
 
-        login = self.generate_login(*d["fullname"].split())
-        password = self.generate_random_string(length=11)
+        #login = self.generate_login(*d["fullname"].split())
+        #password = self.generate_random_string(length=11)
+        try:
+            batch = Batch.objects.get(id=d["batch"])
+        except Batch.DoesNotExist:
+            return JsonResponse({"message": "Нет партии с таким ID"}, status=404)
 
-        batch = Batch.objects.get(id=d["batch"])
-        worker = User.objects.create(
-            fullname=d["fullname"],
+        worker = Worker.objects.create(
+            user_id=d["user"],
             batch=batch,
             date_begin=datetime.strptime(d["date_begin"], "%Y-%m-%d"),
             date_end=datetime.strptime(d["date_end"], "%Y-%m-%d"),
             status=d["status"],
-
-            login=login,
-            hash_password=password,
-            role=d["role"]
         )
 
         return JsonResponse({"worker": WorkerSerializer(worker).data}, status=201)
@@ -76,7 +83,7 @@ class FilterWorkers(View):
         if d["fullname"]:
             filters &= Q(fullname=d["fullname"])
 
-        workers = User.objects.filter(filters)
+        workers = User.objects.filter(filters).order_by("-id")
 
         return JsonResponse({"workers": WorkerSerializer(workers, many=True).data})
     

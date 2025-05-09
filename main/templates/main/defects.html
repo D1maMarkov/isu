@@ -1,5 +1,5 @@
 {% extends "main/base.html" %}
-
+{% load static %}
 {%  block content %}
 <header>
   <h1>Система управления</h1>
@@ -7,7 +7,7 @@
     <a href="/warehouse/materials/">Склад</a>
     <a href="/ceh/workers/" class="active">Цех</a>
     <a href="/docs/">Документация</a>
-    <div class="avatar"></div>
+    <div class="avatar"><img src="{% static 'main/shutdown.png' %}" /></div>
   </div>
 </header>
 
@@ -165,7 +165,7 @@
             const row = document.createElement("tr");
             console.log(d);
             row.innerHTML = `<td>${d.id}</td><td>${d.batch}</td><td>${d.quantity}</td><td>${d.description}</td><td><button>Открыть</button></td>`;
-            tbody.appendChild(row);
+            tbody.prepend(row);
 
             document.getElementById("dialog-add-defect").querySelector("form").reset();
             document.getElementById("dialog-confirm-add-defect").close();

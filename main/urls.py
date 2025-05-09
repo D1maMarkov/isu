@@ -1,10 +1,10 @@
 from django.urls import path
-from main.views.documents import CreateDoc, delete_document, get_document
+from main.views.documents import CreateDoc, DeleteDoc, FilterDocs, GetDocument
 from main.views.defects import CreateDefect, delete_defect, filter_defects, get_defect
-from main.views.users import CreateWorker, EditWorker, FilterWorkers, GetWorker
+from main.views.users import CreateWorker, EditWorker, FilterWorkers, GetWorker, Login, logout_view
 from main.views.overuses import CreateOver, delete_over, edit_over, filter_overs, get_over
 from main.views.products import CreateFinishedProduct, delete_product, edit_product, filter_products, get_product
-from main.views.materials import CreateMaterial, delete_material, edit_material, filter_materials, get_material
+from main.views.materials import CreateMaterial, DeleteMaterial, EditMaterial, FilterMaterials, GetMaterial
 from main.views.pages import DefectsPage, DocsPage, FinishedProductsPage, Index, MaterialsPage, OverusesPage, WorkersPage
 
 
@@ -15,10 +15,10 @@ urlpatterns = [
     path("warehouse/overuse/", OverusesPage.as_view()),
 
     path("materials/add", CreateMaterial.as_view()),
-    path("materials/delete/", delete_material),
-    path("materials/get/<id>", get_material),
-    path("materials/edit/<id>", edit_material),
-    path("materials/filter/", filter_materials),
+    path("materials/delete/", DeleteMaterial.as_view()),
+    path("materials/get/<id>", GetMaterial.as_view()),
+    path("materials/edit/<id>", EditMaterial.as_view()),
+    path("materials/filter/", FilterMaterials.as_view()),
 
     path("products/add/", CreateFinishedProduct.as_view()),
     path("products/delete/<id>", delete_product),
@@ -46,6 +46,10 @@ urlpatterns = [
 
     path("docs/", DocsPage.as_view()),
     path("docs/add/", CreateDoc.as_view()),
-    path("docs/get/<id>/", get_document),
-    path("docs/delete/<id>/", delete_document),
+    path("docs/get/<id>/", GetDocument.as_view()),
+    path("docs/delete/<id>/", DeleteDoc.as_view()),
+    path("docs/filter/", FilterDocs.as_view()),
+
+    path("login", Login.as_view()),
+    path("logout", logout_view)
 ]

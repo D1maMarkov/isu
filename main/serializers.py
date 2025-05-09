@@ -1,6 +1,6 @@
 from rest_framework import serializers
 
-from main.models import FinishedProducts, Materials, OveruseOfMaterials, User, DefectiveProducts as Defect, DocumentManagement as Document
+from main.models import FinishedProducts, Materials, OveruseOfMaterials, User, DefectiveProducts as Defect, DocumentManagement as Document, Worker
 
 
 class FinishedProductsSerializer(serializers.ModelSerializer):
@@ -67,10 +67,18 @@ class WorkerSerializer(serializers.ModelSerializer):
     id = serializers.SerializerMethodField()
     date_begin = serializers.SerializerMethodField()
     date_end = serializers.SerializerMethodField()
+    fullname = serializers.SerializerMethodField()
+    role = serializers.SerializerMethodField()
 
     class Meta:
-        model = User
+        model = Worker
         fields = '__all__'
+
+    def get_fullname(self, obj):
+        return obj.user.fullname
+
+    def get_role(self, obj):
+        return obj.user.role
 
     def get_id(self, obj):
         if obj.id < 100:

@@ -1,5 +1,5 @@
 {% extends "main/base.html" %}
-
+{% load static %}
 {% block content %}
 <header>
   <h1>Система управления</h1>
@@ -7,7 +7,7 @@
     <a href="/warehouse/materials/" class="active">Склад</a>
     <a href="/ceh/workers/">Цех</a>
     <a href="/docs/">Документация</a>
-    <div class="avatar"></div>
+    <div class="avatar"><img src="{% static 'main/shutdown.png' %}" /></div>
   </div>
 </header>
 
@@ -392,7 +392,7 @@ function addMaterial(e) {
           const row = document.createElement('tr');
           m = m.materials;
           row.innerHTML = `<td>${m.id}</td><td>${m.name}</td><td>${m.features}</td><td>${m.quantity}</td><td>${m.price}</td><td>${m.supplier}</td>`;
-          tbody.appendChild(row);
+          tbody.prepend(row);
           document.getElementById('dialog-add-material').querySelector("form").reset()
           document.getElementById('dialog-add-material').close()
           document.getElementById('dialog-confirm-add-material').close()

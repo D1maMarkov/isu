@@ -80,6 +80,6 @@ def filter_overs(request: HttpRequest):
     if d["material"]:
         filters &= Q(material_id=d["material"])
 
-    overs = Overs.objects.filter(filters).order_by(*order_by)
+    overs = Overs.objects.filter(filters).order_by(*order_by, "-id")
 
     return JsonResponse({"overs": OverSerializer(overs, many=True).data})

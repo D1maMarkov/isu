@@ -1,0 +1,60 @@
+{% extends "main/base.html" %}
+
+{% block content %}
+
+<div class="custom-dialog login-form">
+    <div class="dialog-header">
+        <h2>Войти</h2>
+    </div>
+    <form class="form-styled" onsubmit="login(event)">
+        <div class="form-field">
+            <input type="text" placeholder="логин">
+        </div>
+        
+        <div class="form-field">
+            <input class="form-field" type="password" placeholder="пароль">
+        </div>
+
+        <button>Войти</button>
+    </form>
+</dialog>
+
+<style>
+    .login-form{
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+    background-color: white;
+}
+
+.form-styled .form-field{
+    margin: 10px 0px;
+}
+
+body{
+    background-color: rgb(220, 220, 220);
+}
+</style>
+
+<script>
+
+function login(event){
+    event.preventDefault();
+
+    const form = document.querySelector("form");
+    fetch(`login`, {
+        method: "POST",
+        body: JSON.stringify({
+            login: form.querySelectorAll("input")[0].value,
+            password: form.querySelectorAll("input")[1].value
+        })
+    }).then(response => {
+        if (response.status == 200){
+            window.location.href = '/docs/'
+        }
+    })
+}
+
+</script>
+{% endblock %}

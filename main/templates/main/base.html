@@ -325,11 +325,19 @@
 .dialog-body {
   padding: 1.25rem;
 }
-
+.avatar img{
+    width: 100%;
+    cursor: pointer;
+}
 </style>
 </head>
 <body>
   {% block content %}
   {% endblock %}
 </body>
+<script>
+    document.querySelector(".avatar").addEventListener("click", e => {
+        window.location.href = "/logout"
+    })
+</script>
 </html>

@@ -22,6 +22,7 @@ from main.views.documents import (
     GetDocument,
 )
 from main.views.materials import (
+    AllMaterials,
     CreateMaterial,
     DeleteMaterial,
     EditMaterial,
@@ -63,6 +64,7 @@ urlpatterns = [
     path("materials/add", CreateMaterial.as_view()),
     path("materials/delete/", DeleteMaterial.as_view()),
     path("materials/get/<id>", GetMaterial.as_view()),
+    path("materials/all/", AllMaterials.as_view()),
     path("materials/edit/<id>", EditMaterial.as_view()),
     path("materials/filter/", FilterMaterials.as_view()),
     path("products/add/", CreateFinishedProduct.as_view()),

@@ -35,7 +35,7 @@
       <div class="material-actions">
         <button onclick="filterWorkers()">Поиск</button>
         <button onclick="document.getElementById('dialog-add-worker').showModal()">Добавить строку</button>
-        <button onclick="document.getElementById('dialog-edit-worker').showModal()">Изменить строку</button>
+        <button onclick="document.getElementById('dialog-edit-worker-entry').showModal()">Изменить строку</button>
       </div>
 
       <table>
@@ -68,7 +68,13 @@
       <option value="{{u.id}}">{{ u }}</option>
       {% endfor %}
     </select></div>
-    <div class="form-field"><label>Статус</label><input type="text" id="add-worker-status" required></div>
+    <div class="form-field">
+      <label>Статус</label>
+      <select id="add-worker-status">
+        <option value="В процессе">В процессе</option>
+        <option value="Завершено">Завершено</option>
+      </select>
+    </div>
     <div class="form-field">
       <label>Партия</label>
     <select id="add-worker-batch" required>
@@ -99,6 +105,21 @@
 
   </section>
 
+  <!-- Диалог: ID для редактирование строки -->
+  <dialog id="dialog-edit-worker-entry" class="custom-dialog">
+    <div class="dialog-header">
+      <h2>Редактирование строки</h2>
+    </div>
+
+    <form class="form-styled">
+      <div class="form-field"><input type="text" id="edit-id" placeholder="ID" required></div>
+      <div class="dialog-buttons">
+        <button type="button" onclick="confirmEditEntry(event)">Изменить</button>
+        <button type="button" onclick="this.closest('dialog').close()">Отмена</button>
+      </div>
+    </form>
+  </dialog>
+
   <!-- Диалог: редактирование строки -->
   <dialog id="dialog-edit-worker" class="custom-dialog">
     <div class="dialog-header">
@@ -106,7 +127,6 @@
     </div>
 
     <form class="form-styled">
-      <div class="form-field"><input type="text" id="edit-id" placeholder="ID" required></div>
       <div class="form-field">
         <select id="edit-batch">
           {% for b in batches %}
@@ -116,7 +136,12 @@
       </div>
       <div class="form-field"><input type="date" id="edit-date-begin" placeholder="Начало" required></div>
       <div class="form-field"><input type="date" id="edit-date-end" placeholder="Конец" required></div>
-      <div class="form-field"><input type="text" id="edit-status" placeholder="Статус" required></div>
+      <div class="form-field">
+        <select id="edit-status">
+          <option value="В процессе">В процессе</option>
+          <option value="Завершено">Завершено</option>
+        </select>
+      </div>
       <div class="dialog-buttons">
         <button type="button" onclick="confirmEdit(event)">Изменить</button>
         <button type="button" onclick="this.closest('dialog').close()">Отмена</button>
@@ -136,7 +161,46 @@
     </div>
   </dialog>
   <script>
+    function confirmEditEntry(event){
+      event.preventDefault();
+      const id = document.getElementById('edit-id').value.trim();
+      fetch(`/ceh/workers/get/${id}`).then(response => {
+        if (response.status == 404){
+          return alert("Нет работника с таким ID")
+        }
+        if (response.status == 200){
+          response.json().then(response => {
+            const w = response.worker;
 
+            fetch(`/batch/all/`).then(response => response.json()).then(response => response.batches).then(
+              batches => {
+                let selectHTML = '';
+                console.log(batches)
+                batches.forEach(b => {
+                  selectHTML += `
+                  <option value=${b.id} ${+b.id === +w.batch ? 'selected' : ''}>${b.name}</option>
+                  `
+                })
+                document.getElementById('edit-batch').innerHTML = selectHTML;
+              }
+            )
+
+            const statuses = ['В процессе', 'Завершено'];
+            let statusesHTML = ''
+            statuses.forEach(s => {
+              statusesHTML += `<option value="${s}" ${s == w.status ? 'selected': ''}>${s}</option>`
+            })
+
+            document.getElementById('edit-batch').textContent = w.batch;
+            document.getElementById('edit-date-begin').textContent = w.date_begin;
+            document.getElementById('edit-date-end').textContent = w.date_end;
+            document.getElementById('edit-status').innerHTML = statusesHTML;
+
+            document.getElementById('dialog-edit-worker').showModal();
+          })
+        }
+      })
+    }
 let pendingEdit = null;
   function confirmEdit(event){
     event.preventDefault();
@@ -161,6 +225,7 @@ let pendingEdit = null;
         `;
         document.getElementById("confirm-edit-id").textContent = id;
         document.getElementById('dialog-edit-worker').close();
+        document.getElementById('dialog-edit-worker-entry').close();
         document.getElementById('dialog-confirm-edit').showModal();
       }
     })
@@ -191,20 +256,6 @@ let pendingEdit = null;
         }
     })
   }
-
-
-  function openEditDoc() {
-  const id = document.getElementById('edit-doc-id-input').value.trim();
-  if (!id) {
-    alert("Пожалуйста, введите ID заявки.");
-    return;
-  }
-
-  // Здесь можешь подключить подгрузку данных по ID
-  document.getElementById('dialog-edit-doc-id').close();
-  document.getElementById('dialog-edit-doc-entry').showModal();
-}
-
 
 let pendingWorker = {};
 

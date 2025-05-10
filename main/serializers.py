@@ -94,6 +94,7 @@ class DocumentSerializer(serializers.ModelSerializer):
 
 class OverSerializer(serializers.ModelSerializer):
     id = serializers.SerializerMethodField()
+    material = MaterialsSerializer()
 
     class Meta:
         model = OveruseOfMaterials
@@ -135,7 +136,7 @@ class DefectSerializer(serializers.ModelSerializer):
     report_name = serializers.SerializerMethodField()
 
     def get_report_name(self, obj):
-        return get_file_name(obj.reqport)
+        return get_file_name(obj.report)
 
     class Meta:
         model = Defect

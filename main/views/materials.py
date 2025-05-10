@@ -56,6 +56,11 @@ class GetMaterial(BaseView):
         return JsonResponse({"material": MaterialsSerializer(material).data})
 
 
+class AllMaterials(BaseView):
+    def get(self, request: HttpRequest):
+        return JsonResponse({"materials": MaterialsSerializer(Materials.objects.all(), many=True).data})
+
+
 @method_decorator(csrf_exempt, name="dispatch")
 class EditMaterial(BaseView):
     enable_roles = [UserRole.WarehouseManager]
@@ -90,7 +95,7 @@ class FilterMaterials(BaseView):
         if d["id"]:
             filters &= Q(id=d["id"])
         if d["name"]:
-            filters &= Q(name=["name"])
+            filters &= Q(name=d["name"])
         if d["quantity_order"]:
             if d["quantity_order"] == "asc":
                 order_by.append("quantity_material")

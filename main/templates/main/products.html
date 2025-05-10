@@ -18,8 +18,6 @@
     <button data-target="overuse"><a href="/warehouse/overuse/">Перерасход</a></button>
   </div>
 
-  <!-- Документация -->
-  <main id="docs">
   <!-- Склад -->
   <section id="sklad">
     <div class="table-section" id="products">
@@ -39,7 +37,7 @@
       <div class="product-actions">
         <button onclick="filterProducts()">Поиск</button>
         <button onclick="document.getElementById('dialog-add-product').showModal()">Добавить изделие</button>
-        <button onclick="document.getElementById('dialog-edit-qty').showModal()">Изменить количество</button>
+        <button onclick="document.getElementById('dialog-edit-qty-entry').showModal()">Изменить количество</button>
         <button onclick="document.getElementById('dialog-edit-row-id').showModal()">Изменить строку</button>
         <button onclick="document.getElementById('dialog-delete-row-id').showModal()">Удалить строку</button>
       </div>
@@ -79,16 +77,29 @@
 </dialog>
 
 <!--  dialog: Изменить — ввод -->
+<!--  dialog: Изменить — редактирование ID -->
+<dialog id="dialog-edit-qty-entry" class="custom-dialog">
+  <div class="dialog-header">
+    <h2>Изменить количество</h2>
+  </div>
+  <form class="form-styled" onsubmit="openUpdateProductQty(event)">
+    <div class="form-field">
+      <label for="qty-edit-id">ID изделия</label>
+      <input type="text" id="qty-edit-id" placeholder="Например, 001" required>
+    </div>
+    <div class="dialog-buttons">
+      <button type="submit" class="primary">Продолжить</button>
+      <button type="button" onclick="this.closest('dialog').close()">Закрыть</button>
+    </div>
+  </form>
+</dialog>
+
 <!--  dialog: Изменить — редактирование -->
 <dialog id="dialog-edit-qty" class="custom-dialog">
   <div class="dialog-header">
     <h2>Изменить количество</h2>
   </div>
   <form class="form-styled" onsubmit="updateProductQty(event)">
-    <div class="form-field">
-      <label for="qty-edit-id">ID изделия</label>
-      <input type="text" id="qty-edit-id" placeholder="Например, 001" required>
-    </div>
     <div class="form-field">
       <label for="qty-edit-value">Новое количество</label>
       <input type="number" id="qty-edit-value" placeholder="Например, 50" required>
@@ -208,6 +219,29 @@
   </section>
 
   <script>
+    function openUpdateProductQty(event){
+      event.preventDefault();
+
+      const id = document.getElementById('qty-edit-id').value.trim();
+
+      fetch(`/products/get/${id}`).then(response => {
+        if (response.status == 404){
+          alert("Запись с таким ID не найдена.");
+        }
+        if (response.ok){
+          response.json().then(response => {
+            const p = response.product;
+            console.log(p)
+            document.getElementById('qty-edit-value').value = p.quantity_product;
+            document.getElementById('confirm-edit-qty-id').textContent = `${id}`;
+            document.getElementById('confirm-edit-qty-batch').textContent = `Партия: ${p.batch}`;
+            document.getElementById('confirm-edit-qty-name').textContent = `Название: ${p.product_name}`;
+            document.getElementById('dialog-edit-qty').showModal();
+            document.getElementById('dialog-edit-qty-entry').close();
+          })
+        }
+      })
+    }
 let currentEditRow = null;
 
 function performAddProduct(e) {
@@ -236,30 +270,12 @@ function updateProductQty(e) {
   const qty = document.getElementById('qty-edit-value').value.trim();
   const rows = document.querySelectorAll('#products-table-body tr');
 
-  let foundRow = null;
-  rows.forEach(row => {
-    if (row.cells[0].textContent === id) {
-      foundRow = row;
-    }
-  });
-
-  if (!foundRow) {
-    alert("Запись с таким ID не найдена.");
-    return;
-  }
-
   pendingProductAction = {
     id: id,
     qty: qty,
-    name: foundRow.cells[2].textContent,
-    batch: foundRow.cells[1].textContent
   };
 
-  document.getElementById('confirm-edit-qty-id').textContent = `${id}`;
   document.getElementById('confirm-edit-qty-val').textContent = `${qty}`;
-  document.getElementById('confirm-edit-qty-batch').textContent = `Партия: ${pendingProductAction.batch}`;
-  document.getElementById('confirm-edit-qty-name').textContent = `Название: ${pendingProductAction.name}`;
-
   document.getElementById('dialog-confirm-edit-qty').showModal();
 }
 
@@ -398,7 +414,7 @@ function addProduct() {
 function performUpdateProductQty() {
   const rows = document.querySelectorAll('#products-table-body tr');
   rows.forEach(row => {
-    if (row.cells[0].textContent === pendingProductAction.id) {
+    if (+row.cells[0].textContent === +pendingProductAction.id) {
       row.cells[4].textContent = pendingProductAction.qty;
     }
   });

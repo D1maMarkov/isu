@@ -69,7 +69,7 @@
 <div class="material-actions">
   <button onclick="filterMaterials()">Поиск</button>
   <button onclick="document.getElementById('dialog-add-material').showModal()">Добавить материал</button>
-  <button onclick="document.getElementById('dialog-edit-material-qty').showModal()">Изменить количество</button>
+  <button onclick="document.getElementById('dialog-edit-material-qty-entry').showModal()">Изменить количество</button>
   <button onclick="document.getElementById('dialog-edit-material-row-id').showModal()">Изменить строку</button>
   <button onclick="document.getElementById('dialog-delete-material').showModal()">Удалить строку</button>
 </div>
@@ -117,10 +117,25 @@
   </div>
 
   <form class="form-styled" onsubmit="openEditMaterialQty(event)">
-    <input type="text" id="edit-mat-id-qty" placeholder="ID материала" required>
     <input type="number" id="edit-mat-new-qty" placeholder="Новое количество" required>
     <div class="dialog-buttons">
       <button type="submit" class="primary">Сохранить</button>
+      <button type="button" class="secondary" onclick="this.closest('dialog').close()">Закрыть</button>
+    </div>
+  </form>
+</dialog>
+
+
+<!-- Диалог: Ввод ID для редактирования количества строки -->
+<dialog class="custom-dialog" id="dialog-edit-material-qty-entry">
+  <div class="dialog-header">
+    <h2>Изменить количество</h2>
+  </div>
+
+  <form class="form-styled" onsubmit="openEditRowQty(event)">
+    <input type="text" id="edit-mat-id-qty" placeholder="ID материала" required>
+    <div class="dialog-buttons">
+      <button type="submit" class="primary">Продолжить</button>
       <button type="button" class="secondary" onclick="this.closest('dialog').close()">Закрыть</button>
     </div>
   </form>
@@ -143,7 +158,10 @@
 
 <!-- Диалог: Редактирование строки -->
 <dialog class="custom-dialog" id="dialog-edit-material-form">
-  <h3>Редактирование строки</h3>
+  <div class="dialog-header">
+    <h2>Редактирование строки</h2>
+  </div>
+
   <form class="form-styled" onsubmit="saveMaterialEdit(event)">
     <input type="text" id="edit-mat-name" placeholder="Название">
     <input type="text" id="edit-mat-char" placeholder="Характеристики">
@@ -181,8 +199,8 @@
     </div>
 
 <!--  dialog: Изменить строку -->
-<dialog id="dialog-edit-row-id" class="custom-dialog">
-  <div class="dialog-header"><h2>Редактирование строки</h2></div>
+<dialog id="dialog-edit-qty-entry" class="custom-dialog">
+  <div class="dialog-header"><h2>Редактирование количество строки</h2></div>
   <form class="form-styled">
     <div class="form-field">
       <label for="edit-row-id">Введите ID записи</label>
@@ -222,18 +240,6 @@
         <div class="dialog-buttons">
       <button onclick="performDeleteMaterial()">Да</button>
       <button onclick="document.getElementById('dialog-confirm-delete-row').close()">Нет</button>
-    </div>
-  </div>
-</dialog>
-
-<!-- Подтверждение изменения -->
-<dialog id="dialog-confirm-edit-over" class="custom-dialog">
-  <div class="dialog-header"><h2>Подтверждение изменения</h2></div>
-  <div class="form-styled">
-    <p>Изменить строку: <strong id="confirm-edit-data"></strong>?</p>
-    <div class="dialog-buttons">
-      <button onclick="saveMaterialRowEdit(event)">Да</button>
-      <button onclick="document.getElementById('dialog-confirm-edit-over').close()">Нет</button>
     </div>
   </div>
 </dialog>
@@ -284,6 +290,25 @@
 // Сортировка материалов
 document.getElementById('sort-quantity').addEventListener('change', sortMaterials);
 document.getElementById('sort-price').addEventListener('change', sortMaterials);
+
+function openEditRowQty(event){
+  event.preventDefault();
+
+  const id = document.getElementById("edit-mat-id-qty").value;
+  fetch(`/materials/get/${id}`).then(response => {
+    if (response.status == 404){
+      return alert("Запись не найдена");
+    }
+    else if (response.status == 200){
+      response.json().then(response => {
+        const m = response.material;
+        document.getElementById('edit-mat-new-qty').value = m.quantity;
+        document.getElementById('dialog-edit-material-qty-entry').close();
+        document.getElementById('dialog-edit-material-qty').showModal()
+      })
+    }
+  })
+}
 
 let pendingMaterialAction = null;
 let pendingEditMaterialAction = null;

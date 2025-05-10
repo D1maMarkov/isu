@@ -35,7 +35,7 @@
   <div class="material-actions">
     <button onclick="filterOvers()">Поиск</button>
     <button onclick="document.getElementById('dialog-add-over').showModal()">Добавить строку</button>
-    <button onclick="document.getElementById('dialog-edit-over').showModal()">Изменить строку</button>
+    <button onclick="document.getElementById('dialog-edit-over-entry').showModal()">Изменить строку</button>
     <button onclick="document.getElementById('dialog-delete-over').showModal()">Удалить строку</button>
   </div>
 
@@ -45,12 +45,13 @@
         <th>ID</th>
         <th>Номер партии</th>
         <th>ID материала</th>
+        <th>Название материала</th>
         <th>Количество</th>
       </tr>
     </thead>
     <tbody id="over-table-body">
       {% for o in overs %}
-        <tr><td>{{ o.id }}</td><td>{{ o.batch }}</td><td>{{ o.material}}</td><td>{{ o.quantity }}</td></tr>
+        <tr><td>{{ o.id }}</td><td>{{ o.batch }}</td><td>{{ o.material.id }}</td><td>{{ o.material.name }}</td><td>{{ o.quantity }}</td></tr>
       {% endfor %}
     </tbody>
   </table>
@@ -82,11 +83,24 @@
     </form>
   </dialog>
 
+
+  <!-- Изменение ввод ID -->
+  <dialog id="dialog-edit-over-entry" class="custom-dialog">
+    <div class="dialog-header"><h2>Изменить строку</h2></div>
+    <form class="form-styled" onsubmit="openEditOverRow(event)">
+      <div class="form-field"><label>ID</label><input type="text" id="edit-over-id" required></div>
+
+      <div class="dialog-buttons">
+        <button class="primary" type="submit">Продолжить</button>
+        <button type="button" onclick="this.closest('dialog').close()">Закрыть</button>
+      </div>
+    </form>
+  </dialog>
+
   <!-- Изменение -->
   <dialog id="dialog-edit-over" class="custom-dialog">
     <div class="dialog-header"><h2>Изменить строку</h2></div>
     <form class="form-styled" onsubmit="editOverRow(event)">
-      <div class="form-field"><label>ID</label><input type="text" id="edit-over-id" required></div>
       <label>Материал</label>
       <div class="form-field">
         <select id="edit-over-material">
@@ -150,7 +164,7 @@
     <p>Изменить строку: <strong id="confirm-edit-data"></strong>?</p>
     <div class="dialog-buttons">
       <button onclick="performEditOver()">Да</button>
-      <button onclick="document.getElementById('dialog-confirm-edit-over').close()">Нет</button>
+      <button onclick="this.closest('dialog').close()">Нет</button>
     </div>
   </div>
 </dialog>
@@ -159,6 +173,35 @@
   </section>
 
   <script>
+    function openEditOverRow(event){
+      event.preventDefault();
+
+      const id = document.getElementById('edit-over-id').value.trim();
+
+      fetch(`/overs/get/${id}`).then(response => {
+        if (response.status == 404){
+          return alert("Запись не найдена.");
+        }
+        if (response.status == 200){
+          response.json().then(response => {
+            const o = response.over;
+
+            fetch(`/materials/all/`).then(response => response.json()).then(response => response.materials).then(materials => {
+              let selectHTML = '';
+              materials.forEach(m => {
+                selectHTML += `<option value="${m.id}" ${m.id === o.material.id ? 'selected': ''}>${m.name}</option>`;
+              })
+              document.getElementById('edit-over-material').innerHTML = selectHTML;
+            })
+
+            document.getElementById("edit-over-qty").textContent = o.quantity;
+
+            document.getElementById('dialog-edit-over').showModal();
+            document.getElementById('dialog-edit-over-entry').close();
+          })
+        }
+      })
+    }
 function confirmDeleteOver() {
   const id = document.getElementById('delete-over-id').value.trim();
   const rows = document.querySelectorAll('#over-table-body tr');
@@ -169,9 +212,15 @@ function confirmDeleteOver() {
       return alert("Запись не найдена.");
     }
     if (response.status == 200){
-      document.getElementById('dialog-delete-over').close();
-      document.getElementById('confirm-over-id').textContent = id;
-      document.getElementById('dialog-confirm-delete-over').showModal();
+      response.json().then(response => {
+        const o = response.over;
+
+        document.getElementById('dialog-delete-over').close();
+        document.getElementById('confirm-over-id').textContent = `
+        ${id}, ID материала: ${o.material.id}, Название материала: ${o.material.name}
+        `;
+        document.getElementById('dialog-confirm-delete-over').showModal();
+      })
     }
   })
 }
@@ -218,7 +267,7 @@ function performAddOver() {
   }).then(response => {
     if (response.status == 201){
       response.json().then(o => {
-        row.innerHTML = `<td>${o.id}</td><td>${o.batch}</td><td>${o.material}</td><td>${o.quantity}</td>`;
+        row.innerHTML = `<td>${o.id}</td><td>${o.batch}</td><td>${o.material.id}</td><td>${o.material.name}</td><td>${o.quantity}</td>`;
         tbody.prepend(row);
 
         document.getElementById('dialog-confirm-add-over').close();
@@ -263,7 +312,7 @@ function performEditOver() {
   const rows = document.querySelectorAll('#over-table-body tr');
   rows.forEach(row => {
     if (+row.cells[0].textContent === +pendingEdit.id) {
-      row.cells[3].textContent = pendingEdit.qty;
+      row.cells[4].textContent = pendingEdit.qty;
     }
   });
 
@@ -287,7 +336,7 @@ function filterOvers() {
     tbody.innerHTML = '';
     response.overs.forEach(o => {
       const row = document.createElement('tr');
-      row.innerHTML = `<td>${o.id}</td><td>${o.batch}</td><td>${o.material}</td><td>${o.quantity}</td>`;
+      row.innerHTML = `<td>${o.id}</td><td>${o.batch}</td><td>${o.material.id}</td><td>${o.material.name}</td><td>${o.quantity}</td>`;
       tbody.appendChild(row);
     })
   })

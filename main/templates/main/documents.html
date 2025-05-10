@@ -29,13 +29,13 @@
       </div>
 
       {% if request.user.role == "Генеральный директор" %}
-      <button onclick="createBatch(event)">Добавить партию</button>
+      <button onclick="document.getElementById('dialog-confirm-add-batch').showModal()">Добавить партию</button>
       {% endif %}
     </div>
       <div style="display: flex; gap: 0.5rem; margin-bottom: 1rem;">
         <button title="Применить фильтры поиска к документам" onclick="filterDocs()">Поиск</button>
         <button title="Добавить новую заявку" onclick="openAddDoc(event)">Добавить</button>
-        <button title="Редактировать существующую заявку по ID" onclick="document.getElementById('dialog-edit-doc-id').showModal()">Изменить</button>
+        <button title="Редактировать существующую заявку по ID" onclick="document.getElementById('dialog-edit-doc').showModal()">Изменить</button>
         <button title="Удалить заявку по ID с подтверждением" onclick="document.getElementById('dialog-delete-doc-id').showModal()">Удалить</button>
       </div>
         </div>
@@ -140,8 +140,21 @@
       </div>
     </dialog>
 
+    <!-- Подтверждение изменения заявки -->
+    <dialog id="dialog-confirm-edit-doc" class="custom-dialog">
+      <div class="dialog-header">
+        <h2>Подтверждение изменения</h2>
+      </div>
+      <div class="form-styled">
+        <p>Вы уверены, что хотите изменить заявку: <strong id="confirm-edit-doc-data"></strong>?</p>
+        <div class="dialog-buttons">
+          <button onclick="editDoc(event)">Да</button>
+          <button onclick="this.closest('dialog').close()">Нет</button>
+        </div>
+      </div>
+    </dialog>
 
-    <dialog id="dialog-edit-doc-id" class="custom-dialog">
+    <dialog id="dialog-edit-doc" class="custom-dialog">
       <div class="dialog-header">
         <h2>Редактирование заявки</h2>
       </div>
@@ -162,18 +175,19 @@
       <div class="dialog-header">
         <h2>Редактирование записи</h2>
       </div>
-      <form class="form-styled">
+      <form class="form-styled" onsubmit="confirmEditDoc(event)">
         <div class="form-field">
           <label for="edit-doc-batch">Номер партии</label>
-          <input type="text" id="edit-doc-batch" placeholder="П-125">
+          <select id="edit-doc-batch"></select>
         </div>
 
         <div class="form-field">
           <label for="edit-doc-category">Категория</label>
           <select id="edit-doc-category">
-            <option>Одежда</option>
-            <option>Аксессуары</option>
-            <option>Обувь</option>
+            <option>Задание</option>
+            <option>тех. Задание</option>
+            <option>Заказ</option>
+            <option>Заявка</option>
           </select>
         </div>
 
@@ -199,6 +213,20 @@
       <button type="button" onclick="this.closest('dialog').close()">Закрыть</button>
     </div>
   </form>
+</dialog>
+
+<!-- Подтверждение добавления партии -->
+<dialog id="dialog-confirm-add-batch" class="custom-dialog">
+  <div class="dialog-header">
+    <h2>Подтверждение добавления партии</h2>
+  </div>
+  <div class="form-styled">
+    <p>Вы уверены, что хотите добавить партию?</p>
+    <div class="dialog-buttons">
+      <button onclick="createBatch(event)">Да</button>
+      <button onclick="this.closest('dialog').close()">Нет</button>
+    </div>
+  </div>
 </dialog>
 
 <!-- Подтверждение удаления заявки -->
@@ -245,7 +273,22 @@
 
   <script>
     let openResultsDocId = null;
+    let pendingEditDoc = null;
 
+    function confirmEditDoc(event){
+      event.preventDefault();
+      pendingEditDoc = {
+        category: document.getElementById('edit-doc-category').value,
+        batch: document.getElementById('edit-doc-batch').value
+      }
+
+      document.getElementById('confirm-edit-doc-data').textContent = `
+        Категория: ${pendingEditDoc.category},
+        Партия: ${pendingEditDoc.batch}
+      `;
+
+      document.getElementById('dialog-confirm-edit-doc').showModal();
+    }
     function openResults(event, id){
       event.preventDefault();
 
@@ -436,9 +479,41 @@
       method: "POST",
     }).then(response => {
       if (response.ok){
-        alert("Партия добавлена!")
+        response.json().then(response => {
+          const b = response.batch;
+          document.getElementById("dialog-confirm-add-batch").close();
+          alert(`Новая партия № ${b.id} добавлена!`)
+        })
       }
     })
+  }
+
+  function editDoc(event) {
+    event.preventDefault();
+    const id = document.getElementById('edit-doc-id-input').value.trim();
+
+    pendingEditDoc = {
+      category: document.getElementById('edit-doc-category').value,
+      batch: document.getElementById('edit-doc-batch').value
+    }
+    fetch(`/docs/edit/${id}/`, {
+      method: "POST",
+      body: JSON.stringify(pendingEditDoc)
+    }).then(response => {
+        if (response.ok){
+          document.getElementById('dialog-confirm-edit-doc').close();
+          document.getElementById('dialog-edit-doc-entry').querySelector('form').reset();
+          document.getElementById('dialog-edit-doc-entry').close();
+
+          const rows = document.querySelectorAll('tbody tr');
+          rows.forEach(r => {
+            if (+r.cells[0].textContent === +id){
+              r.cells[1].textContent = pendingEditDoc.batch;
+              r.cells[4].textContent = pendingEditDoc.category;
+            }
+          })
+        }
+      })
   }
 
   function openEditDoc() {
@@ -448,8 +523,21 @@
     return;
   }
 
+  fetch(`/batch/all/`).then(response => response.json()).then(response => response.batches).then(
+    batches => {
+      let selectHTML = '';
+      console.log(batches)
+      batches.forEach(b => {
+        selectHTML += `
+        <option value=${b.id}>${b.name}</option>
+        `
+      })
+      document.getElementById('edit-doc-batch').innerHTML = selectHTML;
+    }
+  )
+
   // Здесь можешь подключить подгрузку данных по ID
-  document.getElementById('dialog-edit-doc-id').close();
+  document.getElementById('dialog-edit-doc').close();
   document.getElementById('dialog-edit-doc-entry').showModal();
 }
 
@@ -475,13 +563,14 @@ function performDeleteDoc(event) {
   document.getElementById('dialog-confirm-delete-doc').close();
   fetch(`/docs/delete/${id}/`, {method: "DELETE"}).then(response => {
     if (response.status == 203){
-      alert(`Документ с ID ${id} удалена.`);
+      alert(`Документ с ID ${id} удален.`);
       const rows = document.querySelectorAll("tr");
       rows.forEach(r => {
         if (+r.cells[0].textContent === +id){
           r.remove()
         }
       })
+      document.getElementById('dialog-delete-doc-id').close()
     }
   })
 }

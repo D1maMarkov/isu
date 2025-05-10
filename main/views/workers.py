@@ -59,7 +59,9 @@ class FilterWorkers(View):
         if d["id"]:
             filters &= Q(id=d["id"])
         if d["fullname"]:
-            filters &= Q(fullname=d["fullname"])
+            filters &= Q(user__fullname=d["fullname"])
+        if d["batch"]:
+            filters &= Q(batch_id=d["batch"])
 
         workers = Worker.objects.filter(filters).order_by("-id")
 

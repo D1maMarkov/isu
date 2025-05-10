@@ -19,7 +19,7 @@ class DefectsPage(BaseView, TemplateView):
     def get_context_data(self, **kwargs):
         context = super().get_context_data(**kwargs)
         context["defects"] = DefectSerializer(Defects.objects.order_by("-id"), many=True).data
-        context["batches"] = Batch.objects.all()
+        context["batches"] = Batch.objects.order_by("-id")
 
         return context
 
@@ -91,3 +91,14 @@ def filter_defects(request: HttpRequest):
     defects = Defects.objects.filter(filters).order_by(*order_by, "-id")
 
     return JsonResponse({"defects": DefectSerializer(defects, many=True).data})
+
+
+@method_decorator(csrf_exempt, name="dispatch")
+class DeleteDefectReport(BaseView):
+    def delete(self, request: HttpRequest, id: int):
+        id = int(id)
+        document = Defects.objects.get(id=id)
+        document.report = None
+        document.save()
+
+        return HttpResponse(status=204)

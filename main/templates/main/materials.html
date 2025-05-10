@@ -20,18 +20,6 @@
 
   <!-- Склад -->
 
-  <!-- Диалог: удаление ввод ID -->
-  <dialog id="dialog-delete-material" class="custom-dialog">
-    <div class="dialog-header"><h2>Удаление материала</h2></div>
-    <form class="form-styled">
-      <div class="form-field"><input type="text" id="delete-mat-id" placeholder="ID материала" required></div>
-      <div class="dialog-buttons">
-        <button type="button" onclick="confirmDeleteMaterial()">Удалить</button>
-        <button type="button" onclick="this.closest('dialog').close()">Отмена</button>
-      </div>
-    </form>
-  </dialog>
-
   <dialog id="dialog-confirm-delete-material" class="custom-dialog">
     <div class="dialog-header"><h2>Подтверждение удаления</h2></div>
     <div class="form-styled">
@@ -133,7 +121,11 @@
   </div>
 
   <form class="form-styled" onsubmit="openEditRowQty(event)">
-    <input type="text" id="edit-mat-id-qty" placeholder="ID материала" required>
+    <select id="edit-mat-id-qty">
+      {% for m in materials %}
+      <option value="{{ m.id }}">{{ m.id }} {{ m.name }}</option>
+      {% endfor %}
+    </select>
     <div class="dialog-buttons">
       <button type="submit" class="primary">Продолжить</button>
       <button type="button" class="secondary" onclick="this.closest('dialog').close()">Закрыть</button>
@@ -148,7 +140,11 @@
   </div>
 
   <form class="form-styled">
-    <input type="text" id="edit-material-id" placeholder="Введите ID материала" required>
+    <select id="edit-material-id">
+      {% for m in materials %}
+      <option value="{{ m.id }}">{{ m.id }} {{ m.name }}</option>
+      {% endfor %}
+    </select>
     <div class="dialog-buttons">
       <button type="button" class="primary" onclick="openEditMaterialRow()">Применить</button>
       <button type="button" class="secondary" onclick="this.closest('dialog').close()">Закрыть</button>
@@ -177,57 +173,22 @@
 
 <!-- Диалог: Удалить -->
 <dialog class="custom-dialog" id="dialog-delete-material">
-  <h3>Удаление строки</h3>
+  <div class="dialog-header">
+    <h2>Удаление строки</h2>
+  </div>
+
   <form class="form-styled">
-    <input type="text" id="delete-mat-id" placeholder="Введите ID материала" required>
+    <select id="delete-mat-id">
+      {% for m in materials %}
+      <option value="{{ m.id }}">{{ m.id }} {{ m.name }}</option>
+      {% endfor %}
+    </select>
     <div class="dialog-buttons">
       <button type="button" class="primary" onclick="confirmDeleteMaterial()">Удалить</button>
       <button type="button" class="secondary" onclick="this.closest('dialog').close()">Отмена</button>
     </div>
   </form>
 </dialog>
-
-<!-- Диалог: Подтверждение удаления -->
-<dialog class="custom-dialog" id="dialog-confirm-delete-material">
-  <h3>Подтверждение удаления</h3>
-  <p>Вы уверены, что хотите удалить запись: <strong id="confirm-delete-material-id"></strong>?</p>
-  <div class="dialog-buttons">
-    <button class="primary" onclick="performDeleteMaterial()">Да</button>
-    <button class="secondary" onclick="document.getElementById('dialog-confirm-delete-material').close()">Нет</button>
-  </div>
-</dialog>
-    </div>
-
-<!--  dialog: Изменить строку -->
-<dialog id="dialog-edit-qty-entry" class="custom-dialog">
-  <div class="dialog-header"><h2>Редактирование количество строки</h2></div>
-  <form class="form-styled">
-    <div class="form-field">
-      <label for="edit-row-id">Введите ID записи</label>
-      <input type="text" id="edit-row-id" placeholder="Например, 002" required>
-    </div>
-    <div class="dialog-buttons">
-      <button type="button" onclick="openEditRow()">Продолжить</button>
-      <button type="button" onclick="this.closest('dialog').close()">Закрыть</button>
-    </div>
-  </form>
-</dialog>
-
-<!--  dialog: Удалить — ввод -->
-<dialog id="dialog-delete-row-id" class="custom-dialog">
-  <div class="dialog-header"><h2>Удаление строки</h2></div>
-  <form class="form-styled">
-    <div class="form-field">
-      <label for="delete-row-id">Введите ID строки</label>
-      <input type="text" id="delete-row-id" placeholder="Например, 002" required>
-    </div>
-    <div class="dialog-buttons">
-      <button type="button" onclick="confirmDeleteRow()">Удалить</button>
-      <button type="button" onclick="this.closest('dialog').close()">Отмена</button>
-    </div>
-  </form>
-</dialog>
-
 
 <!--  dialog: Удалить — подтверждение -->
 <dialog id="dialog-confirm-delete-row" class="custom-dialog">

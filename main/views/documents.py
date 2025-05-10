@@ -30,7 +30,7 @@ class GetBatches(BaseView):
     enable_roles = [UserRole.GeneralManager, UserRole.ProductionManager]
 
     def get(self, request: HttpRequest):
-        return JsonResponse({"batches": BatchSerializer(Batch.objects.all(), many=True).data})
+        return JsonResponse({"batches": BatchSerializer(Batch.objects.order_by("-id"), many=True).data})
 
 
 class DocsPage(BaseView, TemplateView):
@@ -53,7 +53,7 @@ class DocsPage(BaseView, TemplateView):
             docs = Document.objects.all().order_by("-id")
 
         context["docs"] = DocumentSerializer(docs, many=True).data
-        context["batches"] = Batch.objects.all()
+        context["batches"] = Batch.objects.order_by("-id")
         return context
 
 

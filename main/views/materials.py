@@ -98,9 +98,9 @@ class FilterMaterials(BaseView):
             filters &= Q(name=d["name"])
         if d["quantity_order"]:
             if d["quantity_order"] == "asc":
-                order_by.append("quantity_material")
+                order_by.append("quantity")
             else:
-                order_by.append("-quantity_material")
+                order_by.append("-quantity")
         if d["price_order"]:
             if d["price_order"] == "asc":
                 order_by.append("price")

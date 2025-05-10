@@ -3,6 +3,7 @@ from django.urls import path
 from main.views.defects import (
     CreateDefect,
     DefectsPage,
+    DeleteDefectReport,
     EditDefect,
     delete_defect,
     filter_defects,
@@ -87,6 +88,7 @@ urlpatterns = [
     path("ceh/defects/filter/", filter_defects),
     path("ceh/defects/edit/<id>/", EditDefect.as_view()),
     path("ceh/defects/delete/<id>/", delete_defect),
+    path("ceh/defects/<id>/delete-report/", DeleteDefectReport.as_view()),
     path("ceh/defects/get/<id>/", get_defect),
     path("docs/", DocsPage.as_view()),
     path("docs/add/", CreateDoc.as_view()),

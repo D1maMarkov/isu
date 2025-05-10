@@ -68,7 +68,7 @@
         </select>
       </div>
       <div class="form-field">
-        <label>ID материала</label>
+        <label>материал</label>
         <select id="add-over-material">
           {% for m in materials %}
           <option value="{{ m.id }}">{{ m }}</option>
@@ -136,7 +136,7 @@
   <dialog id="dialog-confirm-delete-over" class="custom-dialog">
     <div class="dialog-header"><h2>Подтверждение удаления</h2></div>
     <div class="form-styled">
-      <p>Удалить запись с ID <strong id="confirm-over-id"></strong>?</p>
+      <p>Удалить запись с ID <strong id="confirm-delete-over-id"></strong>?</p>
       <div class="dialog-buttons">
         <button onclick="performDeleteOver()">Да</button>
         <button onclick="document.getElementById('dialog-confirm-delete-over').close()">Нет</button>
@@ -214,7 +214,7 @@ function confirmDeleteOver() {
         const o = response.over;
 
         document.getElementById('dialog-delete-over').close();
-        document.getElementById('confirm-over-id').textContent = `
+        document.getElementById('confirm-delete-over-id').textContent = `
         ${id}, ID материала: ${o.material.id}, Название материала: ${o.material.name}
         `;
         document.getElementById('dialog-confirm-delete-over').showModal();
@@ -224,10 +224,10 @@ function confirmDeleteOver() {
 }
 
 function performDeleteOver() {
-  const id = document.getElementById('confirm-over-id').textContent;
+  const id = document.getElementById('delete-over-id').value;
   const rows = document.querySelectorAll('#over-table-body tr');
   rows.forEach(row => {
-    if (row.cells[0].textContent == id) {
+    if (+row.cells[0].textContent == +id) {
       row.remove();
     }
   });

@@ -20,10 +20,8 @@ class WorkersPage(BaseView, TemplateView):
     def get_context_data(self, **kwargs):
         context = super().get_context_data(**kwargs)
         context["workers"] = WorkerSerializer(Worker.objects.order_by("-id"), many=True).data
-
         context["users"] = User.objects.filter(role__in=["Раскройщик", "Швея"])
-
-        context["batches"] = Batch.objects.all()
+        context["batches"] = Batch.objects.order_by("-id")
 
         return context
 

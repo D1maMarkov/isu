@@ -85,7 +85,11 @@
   <form class="form-styled" onsubmit="openUpdateProductQty(event)">
     <div class="form-field">
       <label for="qty-edit-id">ID изделия</label>
-      <input type="text" id="qty-edit-id" placeholder="Например, 001" required>
+      <select id="edit-row-id">
+        {% for p in products %}
+        <option value="{{ p.id }}">{{ p.id }} {{ p.product_name }}</option>
+        {% endfor %}
+      </select>
     </div>
     <div class="dialog-buttons">
       <button type="submit" class="primary">Продолжить</button>
@@ -117,7 +121,11 @@
   <form class="form-styled">
     <div class="form-field">
       <label for="edit-row-id">Введите ID записи</label>
-      <input type="text" id="edit-row-id" placeholder="Например, 002" required>
+      <select id="edit-row-id">
+        {% for p in products %}
+        <option value="{{ p.id }}">{{ p.id }} {{ p.product_name }}</option>
+        {% endfor %}
+      </select>
     </div>
     <div class="dialog-buttons">
       <button type="button" onclick="openEditRow()">Продолжить</button>

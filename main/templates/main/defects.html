@@ -142,6 +142,18 @@
   </div>
 </dialog>
 
+<!-- Диалог: подтверждение удаления репорта -->
+<dialog id="dialog-confirm-delete-report" class="custom-dialog">
+  <div class="dialog-header"><h2>Подтверждение удаления</h2></div>
+  <div class="form-styled">
+    <p>Вы уверены, что хотите удалить файл?</p>
+    <div class="dialog-buttons">
+      <button onclick="removeUploadedReport(event)">Да</button>
+      <button onclick="this.closest('dialog').close()">Нет</button>
+    </div>
+  </div>
+</dialog>
+
 <!-- Диалог: ID для редактирование строки -->
 <dialog id="dialog-edit-entry" class="custom-dialog">
   <div class="dialog-header">
@@ -290,7 +302,7 @@
           document.getElementById("doc-section").innerHTML = `
               <div class="uploaded-section">
                 <a href="#" target="_blank" title="Скачать документ" id="doc-name">${d.report_name}</a>
-                <button class="delete-doc-btn" onclick="removeUploadedDoc(this)">×</button>
+                <button class="delete-doc-btn" onclick="confirmDeleteReport(event, ${d.id})">×</button>
               </div>
               <hr>
           `
@@ -377,7 +389,7 @@
             const tbody = document.querySelector("tbody");
             const row = document.createElement("tr");
             console.log(d);
-            row.innerHTML = `<td>${d.id}</td><td>${d.batch}</td><td>${d.quantity}</td><td>${d.description}</td><td><button>Открыть</button></td>`;
+            row.innerHTML = `<td>${d.id}</td><td>${d.batch}</td><td>${d.quantity}</td><td>${d.description}</td><td><button onclick="openDoc(event, ${ d.id })">Открыть</button></td>`;
             tbody.prepend(row);
 
             document.getElementById("dialog-add-defect").querySelector("form").reset();
@@ -445,5 +457,26 @@ function confirmRemoveUploaded() {
       }
     })
   }
+
+  function confirmDeleteReport(event, id){
+    event.preventDefault();
+    deleteReportDefId = id;
+
+    document.getElementById("dialog-confirm-delete-report").showModal();
+  }
+
+  let deleteReportDefId = null;
+  function removeUploadedReport(event, id){
+      event.preventDefault();
+      fetch(`/ceh/defects/${deleteReportDefId}/delete-report/`, {
+        method: "DELETE"
+      }).then(response => {
+        if (response.ok){
+          alert("Документ удалён!");
+          document.getElementById("dialog-z").close();
+          document.getElementById("dialog-confirm-delete-report").close();
+        }
+      })
+    }
   </script>
 {% endblock  %}

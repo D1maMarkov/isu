@@ -20,8 +20,8 @@ class OverusesPage(BaseView, TemplateView):
     def get_context_data(self, **kwargs):
         context = super().get_context_data(**kwargs)
         context["overs"] = OverSerializer(Overs.objects.order_by("-id"), many=True).data
-        context["batches"] = Batch.objects.all()
-        context["materials"] = Materials.objects.all()
+        context["batches"] = Batch.objects.order_by("-id")
+        context["materials"] = Materials.objects.order_by("-id")
         return context
 
 
@@ -53,7 +53,7 @@ def delete_over(request: HttpRequest, id: str):
     if request.method == "DELETE":
         id = int(id)
         try:
-            Overs.objects.get(id=id).delete()
+            Overs.objects.get(id=int(id)).delete()
         except Overs.DoesNotExist:
             return HttpResponse(status=404)
         return HttpResponse(status=203)

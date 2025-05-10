@@ -22,7 +22,7 @@ class FinishedProductsPage(BaseView, TemplateView):
     def get_context_data(self, **kwargs):
         context = super().get_context_data(**kwargs)
         context["products"] = FinishedProductsSerializer(Products.objects.all(), many=True).data
-        context["batches"] = Batch.objects.all()
+        context["batches"] = Batch.objects.order_by("-id")
         return context
 
 

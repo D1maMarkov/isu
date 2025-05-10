@@ -191,9 +191,9 @@
               statusesHTML += `<option value="${s}" ${s == w.status ? 'selected': ''}>${s}</option>`
             })
 
-            document.getElementById('edit-batch').textContent = w.batch;
-            document.getElementById('edit-date-begin').textContent = w.date_begin;
-            document.getElementById('edit-date-end').textContent = w.date_end;
+            document.getElementById('edit-batch').value = w.batch;
+            document.getElementById('edit-date-begin').value = w.date_begin;
+            document.getElementById('edit-date-end').value = w.date_end;
             document.getElementById('edit-status').innerHTML = statusesHTML;
 
             document.getElementById('dialog-edit-worker').showModal();

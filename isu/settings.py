@@ -127,3 +127,9 @@ print(STATIC_DIRS)
 DEFAULT_AUTO_FIELD = "django.db.models.BigAutoField"
 
 AUTH_USER_MODEL = "main.User"
+
+LANGUAGE_CODE = "ru-ru"
+TIME_ZONE = "Europe/Moscow"  # Moscow Time Zone
+USE_I18N = True
+USE_L10N = True
+USE_TZ = True  # Enable Time Zone Support

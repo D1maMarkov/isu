@@ -128,16 +128,19 @@ class EditDocument(BaseView):
     def post(self, request: HttpRequest, id: str):
         id = int(id)
         document = get_object_or_404(Document, id=id)
-        d = json.loads(request.body)
         files = request.FILES
 
-        if "file" in files:
-            document.request = files["file"]
+        if files:
+            if "file" in files:
+                document.request = files["file"]
 
-        if "category" in d:
-            document.category_id = d["category"]
-        if "batch" in d:
-            document.batch_id = d["batch"]
+        else:
+            d = json.loads(request.body)
+
+            if "category" in d:
+                document.category = d["category"]
+            if "batch" in d:
+                document.batch_id = d["batch"]
 
         document.save()
 

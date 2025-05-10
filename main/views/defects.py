@@ -61,10 +61,16 @@ class EditDefect(BaseView):
     def post(self, request: HttpRequest, id: str):
         id = int(id)
         defect = get_object_or_404(Defects, id=id)
-        # d=json.loads(request.body)
-        print(request.FILES)
+        files = request.FILES
+        if files:
+            defect.report = request.FILES["file"]
 
-        defect.report = request.FILES["file"]
+        else:
+            d = json.loads(request.body)
+            defect.batch_id = d["batch"]
+            defect.quantity = d["quantity"]
+            defect.description = d["description"]
+
         defect.save()
 
         return HttpResponse(status=202)
@@ -72,14 +78,16 @@ class EditDefect(BaseView):
 
 def filter_defects(request: HttpRequest):
     d = request.GET
+
     filters = Q()
-    if d["id"]:
-        filters &= Q(id=d["id"])
+    order_by = []
+    if d["batch"]:
+        filters &= Q(batch_id=d["batch"])
     if d["quantity"]:
-        filters &= Q(quantity=d["quantity"])
+        order_by.append(d["quantity"])
     if d["description"]:
         filters &= Q(description=d["description"])
 
-    defects = Defects.objects.filter(filters).order_by("-id")
+    defects = Defects.objects.filter(filters).order_by(*order_by, "-id")
 
     return JsonResponse({"defects": DefectSerializer(defects, many=True).data})

@@ -23,16 +23,19 @@
       <h2>Бракованные изделия</h2>
       <div class="filters">
         <input placeholder="Партия">
-        <input placeholder="Количество">
+        <select>
+          <option value="">Количество</option>
+          <option value="quantity">По возрастанию</option>
+          <option value="-quantity">По убыванию</option>
+        </select>
         <input placeholder="Описание">
       </div>
 
       <div class="product-actions">
         <button onclick="filterDefects()">Поиск</button>
         <button onclick="document.getElementById('dialog-add-defect').showModal()">Добавить изделия</button>
-        <button>Изменить запись</button>
+        <button onclick="document.getElementById('dialog-edit-entry').showModal()">Изменить запись</button>
         <button onclick="document.getElementById('dialog-delete-defect').showModal()">Удалить запись</button>
-        <button>Открыть</button>
       </div>
 
       <table>
@@ -139,7 +142,143 @@
   </div>
 </dialog>
 
+<!-- Диалог: ID для редактирование строки -->
+<dialog id="dialog-edit-entry" class="custom-dialog">
+  <div class="dialog-header">
+    <h2>Редактирование строки</h2>
+  </div>
+
+  <form class="form-styled">
+    <div class="form-field"><input type="text" id="edit-id" placeholder="ID" required></div>
+    <div class="dialog-buttons">
+      <button type="button" onclick="confirmEditEntry(event)">Изменить</button>
+      <button type="button" onclick="this.closest('dialog').close()">Отмена</button>
+    </div>
+  </form>
+</dialog>
+
+<!-- Диалог: редактирование строки -->
+<dialog id="dialog-edit" class="custom-dialog">
+  <div class="dialog-header">
+    <h2>Редактирование строки</h2>
+  </div>
+
+  <form class="form-styled">
+    <div class="form-field">
+      <select id="edit-batch">
+        {% for b in batches %}
+        <option value="{{ b.id }}">{{ b }}</option>
+        {% endfor %}
+      </select>
+    </div>
+    <div class="form-field"><input type="number" id="edit-quantity" placeholder="Количество" required></div>
+    <div class="form-field"><input type="text" id="edit-description" placeholder="Описание" required></div>
+
+    <div class="dialog-buttons">
+      <button type="button" onclick="confirmEdit(event)">Изменить</button>
+      <button type="button" onclick="this.closest('dialog').close()">Отмена</button>
+    </div>
+  </form>
+</dialog>
+
+<!-- Диалог: подтверждение редактирования -->
+<dialog id="dialog-confirm-edit" class="custom-dialog">
+  <div class="dialog-header"><h2>Подтверждение изменения</h2></div>
+  <div class="form-styled">
+    <p>Вы уверены, что хотите редактировать ФИО работника <strong id="confirm-edit-id"></strong>: <strong id="confirm-edit-data"></strong>?</p>
+    <div class="dialog-buttons">
+      <button onclick="edit(event)">Да</button>
+      <button onclick="this.closest('dialog').close()">Нет</button>
+    </div>
+  </div>
+</dialog>
+
   <script>
+    let pendingEdit = null;
+  function confirmEdit(event){
+    event.preventDefault();
+    const id = document.getElementById('edit-id').value.trim();
+    fetch(`/ceh/defects/get/${id}`).then(response => {
+      if (response.status == 404){
+        return alert("Нет брака с таким ID")
+      }
+      if (response.status == 200){
+        pendingEdit = {
+          batch: document.getElementById('edit-batch').value.trim(),
+          description: document.getElementById('edit-description').value.trim(),
+          quantity: document.getElementById('edit-quantity').value.trim(),
+        }
+
+        document.getElementById("confirm-edit-data").textContent = `
+          Партия: ${pendingEdit.batch},
+          Количество: ${pendingEdit.quantity},
+          Описание: ${pendingEdit.description}
+        `;
+        document.getElementById("confirm-edit-id").textContent = id;
+        document.getElementById('dialog-edit').close();
+        document.getElementById('dialog-edit-entry').close();
+        document.getElementById('dialog-confirm-edit').showModal();
+      }
+    })
+  }
+    function edit(event){
+    event.preventDefault();
+    const id = document.getElementById("edit-id").value;
+    fetch(`/ceh/defects/edit/${id}/`, {
+      method: "POST",
+      body: JSON.stringify(pendingEdit)
+    }).then(response => {
+        if (response.status == 202){
+          const rows = document.querySelectorAll('table tr');
+          rows.forEach(row => {
+            if (+row.cells[0].textContent === +id) {
+              row.cells[1].textContent = pendingEdit.batch;
+              row.cells[2].textContent = pendingEdit.quantity;
+              row.cells[3].textContent = pendingEdit.description;
+            }
+          });
+
+          pendingEdit = null;
+          document.getElementById("dialog-edit").querySelector("form").reset();
+          document.getElementById("dialog-edit").close();
+          document.getElementById("dialog-confirm-edit").close()
+        }
+    })
+  }
+
+    function confirmEditEntry(event){
+      event.preventDefault();
+      const id = document.getElementById('edit-id').value.trim();
+      fetch(`/ceh/defects/get/${id}`).then(response => {
+        if (response.status == 404){
+          return alert("Нет брака с таким ID")
+        }
+        if (response.status == 200){
+          response.json().then(response => {
+            const d = response.defect;
+
+            fetch(`/batch/all/`).then(response => response.json()).then(response => response.batches).then(
+              batches => {
+                let selectHTML = '';
+                console.log(batches)
+                batches.forEach(b => {
+                  selectHTML += `
+                  <option value=${b.id} ${+b.id === +d.batch ? 'selected' : ''}>${b.name}</option>
+                  `
+                })
+                document.getElementById('edit-batch').innerHTML = selectHTML;
+              }
+            )
+
+            document.getElementById('edit-description').value = d.description;
+            document.getElementById('edit-quantity').value = d.quantity;
+
+            document.getElementById('dialog-edit').showModal();
+          })
+        }
+      })
+    }
+
     let sendDocDefId = null;
     function openDoc(event, id){
       fetch(`/ceh/defects/get/${id}/`).then(
@@ -275,19 +414,8 @@
       document.getElementById('dialog-confirm-add-defect').showModal();
     }
 
-function removeUploadedDoc(button) {
-  const container = button.closest('.uploaded-section');
-  if (container) container.remove();
-}
 
 let pendingDocToDelete = null;
-
-function removeUploadedDoc(button) {
-  // Сохраняем элемент, который хотим удалить
-  pendingDocToDelete = button.closest('.uploaded-section');
-  // Показываем окно подтверждения
-  document.getElementById('dialog-confirm-delete-docfile').showModal();
-}
 
 function confirmRemoveUploaded() {
   if (pendingDocToDelete) {
@@ -298,11 +426,11 @@ function confirmRemoveUploaded() {
 }
 
   function filterDefects(){
-    const id = document.querySelector(".filters").children[0].value;
+    const batch = document.querySelector(".filters").children[0].value;
     const quantity = document.querySelector(".filters").children[1].value;
     const description = document.querySelector(".filters").children[2].value;
 
-    fetch(`/ceh/defects/filter/?id=${id}&quantity=${quantity}&description=${description}`).then(response => {
+    fetch(`/ceh/defects/filter/?batch=${batch}&quantity=${quantity}&description=${description}`).then(response => {
       if (response.status == 200){
         response.json().then(res => {
           const tbody = document.querySelector("tbody");
@@ -310,7 +438,7 @@ function confirmRemoveUploaded() {
 
           res.defects.forEach(d => {
             const row = document.createElement("tr");
-            row.innerHTML = `<td>${d.id}</td><td>${d.batch}</td><td>${d.quantity}</td><td>${d.description}</td><td><button>Открыть</button></td>`
+            row.innerHTML = `<td>${d.id}</td><td>${d.batch}</td><td>${d.quantity}</td><td>${d.description}</td><td><button onclick="openDoc(event, ${ d.id })">Открыть</button>`
             tbody.appendChild(row)
           });
         })

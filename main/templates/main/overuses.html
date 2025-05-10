@@ -168,8 +168,6 @@
     </div>
   </div>
 </dialog>
-
-
   </section>
 
   <script>
@@ -194,7 +192,7 @@
               document.getElementById('edit-over-material').innerHTML = selectHTML;
             })
 
-            document.getElementById("edit-over-qty").textContent = o.quantity;
+            document.getElementById("edit-over-qty").value = o.quantity;
 
             document.getElementById('dialog-edit-over').showModal();
             document.getElementById('dialog-edit-over-entry').close();

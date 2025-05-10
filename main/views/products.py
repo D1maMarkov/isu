@@ -83,7 +83,7 @@ def filter_products(request: HttpRequest):
     if d["batch"]:
         filters &= Q(batch_id=d["batch"])
     if d["name"]:
-        filters &= Q(name=["name"])
+        filters &= Q(product_name=d["name"])
     if d["quantity_order"]:
         if d["quantity_order"] == "asc":
             order_by.append("quantity_product")

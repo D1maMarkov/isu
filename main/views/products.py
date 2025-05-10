@@ -1,15 +1,29 @@
-from django.http import HttpResponse
-from django.views import View
-
-from main.serializers import FinishedProductsSerializer
-from main.models import FinishedProducts as Products
 import json
+
+from django.db.models import Q
 from django.http import HttpRequest, HttpResponse, JsonResponse
 from django.shortcuts import get_object_or_404
+from django.utils.decorators import method_decorator
 from django.views import View
 from django.views.decorators.csrf import csrf_exempt
-from django.db.models import Q
-from django.utils.decorators import method_decorator
+from django.views.generic import TemplateView
+
+from entities.user import UserRole
+from main.models import Batch
+from main.models import FinishedProducts as Products
+from main.serializers import FinishedProductsSerializer
+from main.views.base import BaseView
+
+
+class FinishedProductsPage(BaseView, TemplateView):
+    template_name = "main/products.html"
+    enable_roles = [UserRole.WarehouseManager, UserRole.Cutter]
+
+    def get_context_data(self, **kwargs):
+        context = super().get_context_data(**kwargs)
+        context["products"] = FinishedProductsSerializer(Products.objects.all(), many=True).data
+        context["batches"] = Batch.objects.all()
+        return context
 
 
 @method_decorator(csrf_exempt, name="dispatch")
@@ -18,10 +32,7 @@ class CreateFinishedProduct(View):
         d = json.loads(request.body)
 
         product = Products.objects.create(
-            batch_id=d["batch"],
-            product_name=d["name"],
-            size=d["size"],
-            quantity_product=d["quantity"] 
+            batch_id=d["batch"], product_name=d["name"], size=d["size"], quantity_product=d["quantity"]
         )
         return JsonResponse(FinishedProductsSerializer(product).data, status=201)
 
@@ -35,7 +46,7 @@ def delete_product(request: HttpRequest, id: str):
         except Products.DoesNotExist:
             return HttpResponse(status=404)
         return HttpResponse(status=203)
-    
+
     return HttpRequest(status=403)
 
 
@@ -44,20 +55,21 @@ def get_product(request: HttpRequest, id: str):
     product = get_object_or_404(Products, id=id)
     return JsonResponse({"product": FinishedProductsSerializer(product).data})
 
+
 @csrf_exempt
 def edit_product(request: HttpRequest, id: str):
     id = int(id)
 
     p = get_object_or_404(Products, id=id)
-    d=json.loads(request.body)
-    if "batch" in d: 
+    d = json.loads(request.body)
+    if "batch" in d:
         p.batch_id = d["batch"]
     if "name" in d:
-        p.product_name=d["name"]
+        p.product_name = d["name"]
     if "size" in d:
-        p.size=d["size"]
+        p.size = d["size"]
     if "quantity" in d:
-        p.quantity_product=d["quantity"]
+        p.quantity_product = d["quantity"]
 
     p.save()
 

@@ -1,13 +1,27 @@
 import json
+
+from django.db.models import Q
 from django.http import HttpRequest, HttpResponse, JsonResponse
 from django.shortcuts import get_object_or_404
-from entities.user import UserRole
-from main.views.base import BaseView
-from main.serializers import MaterialsSerializer
-from main.models import Materials
 from django.utils.decorators import method_decorator
 from django.views.decorators.csrf import csrf_exempt
-from django.db.models import Q
+from django.views.generic import TemplateView
+
+from entities.user import UserRole
+from main.models import Materials
+from main.serializers import MaterialsSerializer
+from main.views.base import BaseView
+
+
+class MaterialsPage(BaseView, TemplateView):
+    template_name = "main/materials.html"
+    enable_roles = [UserRole.Cutter, UserRole.WarehouseManager, UserRole.PatternDesigner]
+
+    def get_context_data(self, **kwargs):
+        context = super().get_context_data(**kwargs)
+        context["materials"] = MaterialsSerializer(Materials.objects.all().order_by("-id"), many=True).data
+
+        return context
 
 
 @method_decorator(csrf_exempt, name="dispatch")
@@ -15,7 +29,7 @@ class CreateMaterial(BaseView):
     enable_roles = [UserRole.WarehouseManager]
 
     def post(self, request: HttpRequest):
-        d=json.loads(request.body)
+        d = json.loads(request.body)
         material = Materials.objects.create(**d)
         return JsonResponse({"materials": MaterialsSerializer(material).data}, status=201)
 
@@ -31,7 +45,7 @@ class DeleteMaterial(BaseView):
         except Materials.DoesNotExist:
             return HttpResponse(status=404)
         return HttpResponse(status=203)
-    
+
 
 class GetMaterial(BaseView):
     enable_roles = [UserRole.WarehouseManager]
@@ -49,17 +63,17 @@ class EditMaterial(BaseView):
     def post(self, request: HttpRequest, id: str):
         id = int(id)
         material = get_object_or_404(Materials, id=id)
-        d=json.loads(request.body)
-        if "name" in d: 
+        d = json.loads(request.body)
+        if "name" in d:
             material.name = d["name"]
         if "quantity" in d:
             material.quantity = d["quantity"]
         if "features" in d:
-            material.features=d["features"]
+            material.features = d["features"]
         if "price" in d:
-            material.price=d["price"]
+            material.price = d["price"]
         if "supplier" in d:
-            material.supplier=d["supplier"]
+            material.supplier = d["supplier"]
 
         material.save()
 
@@ -91,7 +105,7 @@ class FilterMaterials(BaseView):
             filters &= Q(features=d["features"])
         if d["supplier"]:
             filters &= Q(supplier=d["supplier"])
-        
+
         materials = Materials.objects.filter(filters).order_by(*order_by, "-id")
 
         return JsonResponse({"materials": MaterialsSerializer(materials, many=True).data})

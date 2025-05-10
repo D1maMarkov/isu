@@ -1,11 +1,14 @@
+from django.contrib.auth.models import AbstractBaseUser, PermissionsMixin, UserManager
 from django.db import models
-from django.contrib.auth.models import UserManager
-from django.contrib.auth.models import AbstractBaseUser, PermissionsMixin
-from django.contrib.auth.hashers import make_password
-from entities.user import UserRole
-from utils.security.password_hasher import PasswordHasher
 from django.utils import timezone
-from django.utils.translation import gettext_lazy as _
+
+from entities.user import UserRole
+
+DocumentStatuses = (("", ""), ("", ""))
+
+WorkerStatuses = (("", ""), ("", ""))
+
+CategoryRequests = (("закупка", ""), ("согласование", ""))
 
 
 class Batch(models.Model):
@@ -30,12 +33,6 @@ class Materials(models.Model):
 
     def __str__(self):
         return self.name
-
-
-WorkerStatuses = (
-    ("", ""),
-    ("", "")
-)
 
 
 class MyUserManager(UserManager):
@@ -69,11 +66,7 @@ class User(AbstractBaseUser, PermissionsMixin):
 
     login = models.CharField(unique=True, max_length=50, null=True)
     password = models.CharField(max_length=180)
-    role = models.CharField(choices=[
-            (channel.value, channel.value) for channel in UserRole
-        ], max_length=50, null=True)
-
-    password_hasher = PasswordHasher()
+    role = models.CharField(choices=[(channel.value, channel.value) for channel in UserRole], max_length=50, null=True)
 
     objects = MyUserManager()
 
@@ -81,16 +74,17 @@ class User(AbstractBaseUser, PermissionsMixin):
     is_active = models.BooleanField(default=True)
 
     USERNAME_FIELD = "login"
+
     class Meta:
         verbose_name = "Пользователи"
         verbose_name_plural = "Пользователи"
 
     def __str__(self):
         return f"{self.fullname} - {self.role}"
-    
+
     def check_password(self, raw_password):
         return self.password == raw_password
-    
+
 
 class Worker(models.Model):
     user = models.ForeignKey(User, on_delete=models.CASCADE)
@@ -108,29 +102,27 @@ class Worker(models.Model):
         return str(self.user)
 
 
-DocumentStatuses = (
-    ("", ""),
-    ("", "")
-)
-
-CategoryRequests = (
-    ("закупка", ""),
-    ("согласование", "")
-)	
-    
-
 class DocumentManagement(models.Model):
     batch = models.ForeignKey(Batch, on_delete=models.CASCADE)
     status = models.CharField(max_length=50, verbose_name="Статус заявки", choices=DocumentStatuses)
-    request = models.TextField(verbose_name="Текст заявки")
+    request = models.FileField(verbose_name="Текст заявки", upload_to="static/documents/requests/")
     category = models.CharField(max_length=50, verbose_name="Тип", choices=CategoryRequests)
-    result = models.TextField(verbose_name="Результат обработки заявки")
     updated_at = models.DateTimeField(auto_now=True, verbose_name="Дата и время последнего изменения")
     created_at = models.DateTimeField(default=timezone.now)
 
     class Meta:
         verbose_name = "Документооборот"
         verbose_name_plural = "Документооборот"
+
+
+class DocumentResult(models.Model):
+    document = models.ForeignKey(DocumentManagement, on_delete=models.CASCADE, related_name="results")
+    file = models.FileField(verbose_name="Результат обработки заявки", upload_to="static/documents/results/")
+
+    class Meta:
+        verbose_name = "Результат заявки"
+        verbose_name_plural = "Результаты заявки"
+
 
 class FinishedProducts(models.Model):
     batch = models.ForeignKey(Batch, on_delete=models.CASCADE)
@@ -150,7 +142,9 @@ class DefectiveProducts(models.Model):
     batch = models.ForeignKey(Batch, on_delete=models.CASCADE)
     quantity = models.IntegerField(verbose_name="Количество бракованных изделий")
     description = models.CharField(max_length=255, verbose_name="Описание дефекта")
-    report = models.CharField(max_length=255, verbose_name="Ссылка на отчёт (файл/заметка)", null=True)
+    report = models.FileField(
+        verbose_name="Ссылка на отчёт (файл/заметка)", null=True, upload_to="static/defects/reports/"
+    )
 
     class Meta:
         verbose_name = "Брак"

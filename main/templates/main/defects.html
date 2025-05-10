@@ -39,7 +39,7 @@
         <thead><tr><th>ID</th><th>Партия</th><th>Количество</th><th>Описание</th><th>Файл</th></tr></thead>
         <tbody>
           {% for d in defects %}
-          <tr><td>{{ d.id }}</td><td>{{ d.batch }}</td><td>{{ d.quantity }}</td><td>{{ d.description }}</td><td><button>Открыть</button></td></tr>
+          <tr><td>{{ d.id }}</td><td>{{ d.batch }}</td><td>{{ d.quantity }}</td><td>{{ d.description }}</td><td><button onclick="openDoc(event, {{ d.id }})">Открыть</button></td></tr>
           {% endfor %}
         </tbody>
       </table>
@@ -51,12 +51,16 @@
     <div class="dialog-header">
       <h2>Добавление новой записи</h2>
     </div>
-  
+
     <form class="form-styled" onsubmit="performAddDef(event)">
-      <input type="text" id="add-def-batch" placeholder="Номер партии" required>
+      <select id="add-def-batch">
+        {% for b in batches %}
+        <option value="{{ b.id }}">{{ b }}</option>
+        {% endfor %}
+      </select>
       <input type="number" id="add-def-quantity" placeholder="Количество" required>
       <input type="text" id="add-def-description" placeholder="Описание" required>
-  
+
       <div class="dialog-buttons">
         <button type="submit" class="primary">Добавить</button>
         <button type="button" class="secondary" onclick="this.closest('dialog').close()">Закрыть</button>
@@ -112,7 +116,80 @@
 </dialog>
 
 
+<dialog id="dialog-z" class="custom-dialog">
+  <div class="dialog-header">
+    <h2>Загруженные документы</h2>
+  </div>
+  <div class="dialog-body">
+    <div id="doc-section">
+      <div class="uploaded-section">
+        <a href="#" target="_blank" title="Скачать документ" id="doc-name">Документ на согласование объёма выпуска</a>
+        <button class="delete-doc-btn" onclick="removeUploadedDoc(this)">×</button>
+      </div>
+    <hr>
+    </div>
+
+    <p>Загрузите новую версию документа:</p>
+    <input type="file" id="doc-input" accept=".doc,.docx">
+
+    <div class="dialog-buttons">
+      <button class="primary" onclick="sendDoc(event)">Отправить</button>
+      <button onclick="this.closest('dialog').close()">Закрыть</button>
+    </div>
+  </div>
+</dialog>
+
   <script>
+    let sendDocDefId = null;
+    function openDoc(event, id){
+      fetch(`/ceh/defects/get/${id}/`).then(
+        response => response.json()
+      ).then(r => {
+        const d = r.defect;
+        sendDocDefId = d.id;
+        if (d.report !== undefined && d.report !== null){
+          document.getElementById("doc-section").innerHTML = `
+              <div class="uploaded-section">
+                <a href="#" target="_blank" title="Скачать документ" id="doc-name">${d.report_name}</a>
+                <button class="delete-doc-btn" onclick="removeUploadedDoc(this)">×</button>
+              </div>
+              <hr>
+          `
+        }
+        else{
+          document.getElementById("doc-section").innerHTML = ``;
+        }
+        document.getElementById('dialog-z').showModal();
+      })
+    }
+
+    function sendDoc(event){
+      const fileInput = document.getElementById('doc-input');
+      const formData = new FormData();
+      formData.append('file', fileInput.files[0]);
+
+      // Отправляем файл на сервер
+      fetch(`/ceh/defects/edit/${sendDocDefId}/`, {
+          method: 'POST',
+          body: formData,
+      })
+      .then(response => {
+          if (response.ok) {
+              document.getElementById('dialog-z').close();
+          }
+          else{
+            throw new Error('Network response was not ok.');
+          }
+      })
+      .then(data => {
+          alert('Файл успешно загружен!');
+      })
+      .catch(error => {
+          console.error('Ошибка:', error);
+          alert('Произошла ошибка при загрузке файла.');
+      });
+    }
+
     function deleteDef(event){
       event.preventDefault()
       const id = document.getElementById("delete-defect-id").value.trim();
@@ -147,9 +224,6 @@
         }
       })
     }
-
-
-
 
     let pendingAddDef = null;
 

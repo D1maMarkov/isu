@@ -13,40 +13,46 @@
   <!-- Документация -->
   <main id="docs">
     <h2>Документация</h2>
-        <div class="filters">
-              <input type="text" placeholder="Поиск по ID заявки">
-              <input type="text" placeholder="Поиск по номеру партии">
-          
-              <select>
-                <option>Все категории</option>
-                <option>Заявка</option>
-                <option>Задание</option>
-                <option>тех. Задание</option>
-                <option>Заказ</option>
-              </select>
-            </div>
+    <div style="display: flex;">
 
-            <div style="display: flex; gap: 0.5rem; margin-bottom: 1rem;">
-              <button title="Применить фильтры поиска к заявкам" onclick="filterDocs()">Поиск</button>
-              <button title="Добавить новую заявку" onclick="document.getElementById('dialog-add-doc').showModal()">Добавить</button>
-              <button title="Редактировать существующую заявку по ID" onclick="document.getElementById('dialog-edit-doc-id').showModal()">Изменить</button>
-              <button title="Удалить заявку по ID с подтверждением" onclick="document.getElementById('dialog-delete-doc-id').showModal()">Удалить</button>
-            </div>
-          </div>
+      <div class="filters">
+        <input type="text" placeholder="Поиск по ID заявки">
+        <input type="text" placeholder="Поиск по номеру партии">
+
+        <select>
+          <option>Все категории</option>
+          <option>Документ</option>
+          <option>Задание</option>
+          <option>тех. Задание</option>
+          <option>Заказ</option>
+        </select>
+      </div>
+
+      {% if request.user.role == "Генеральный директор" %}
+      <button onclick="createBatch(event)">Добавить партию</button>
+      {% endif %}
+    </div>
+      <div style="display: flex; gap: 0.5rem; margin-bottom: 1rem;">
+        <button title="Применить фильтры поиска к документам" onclick="filterDocs()">Поиск</button>
+        <button title="Добавить новую заявку" onclick="openAddDoc(event)">Добавить</button>
+        <button title="Редактировать существующую заявку по ID" onclick="document.getElementById('dialog-edit-doc-id').showModal()">Изменить</button>
+        <button title="Удалить заявку по ID с подтверждением" onclick="document.getElementById('dialog-delete-doc-id').showModal()">Удалить</button>
+      </div>
+        </div>
     </div>
 
     <table>
       <thead>
         <tr>
-          <th>ID заявки</th><th>Номер партии</th><th>Заявка</th>
+          <th>ID заявки</th><th>Номер партии</th><th>Документ</th>
           <th>Дата загрузки</th><th>Категория</th><th>Результат</th><th>Обновлено</th>
         </tr>
       </thead>
       <tbody>
         {% for d in docs %}
         <tr>
-          <td>{{ d.id }}</td><td>{{ d.batch }}</td><td><button title="Открыть загруженные документы заявки" onclick="document.getElementById('dialog-z').showModal()">Открыть</button></td>
-          <td>{{ d.created_at }}</td><td>{{ d.category }}</td><td><button title="Открыть результат заявки" onclick="document.getElementById('dialog-r').showModal()">Открыть</button></td><td>{{ d.updated_at }}</td>
+          <td>{{ d.id }}</td><td>{{ d.batch }}</td><td><button title="Открыть загруженные документы заявки" onclick="openDoc(event, {{d.id}})">Открыть</button></td>
+          <td>{{ d.created_at }}</td><td>{{ d.category }}</td><td><button title="Открыть результат заявки" onclick="openResults(event, {{d.id}})">Открыть</button></td><td>{{ d.updated_at }}</td>
           {% endfor %}
         </tr>
       </tbody>
@@ -56,43 +62,24 @@
         <h2>Загруженные документы</h2>
       </div>
       <div class="dialog-body">
-        <div class="uploaded-section">
-          <a href="#" target="_blank" title="Скачать документ">Заявка на согласование объёма выпуска</a>
-          <button class="delete-doc-btn" onclick="removeUploadedDoc(this)">×</button>
-        </div>
-    
+        <div id="doc-section">
+          <div class="uploaded-section">
+            <a href="" target="_blank" title="Скачать документ" id="doc-name">Документ на согласование объёма выпуска</a>
+            <button class="delete-doc-btn" onclick="removeUploadedRequest(event)">×</button>
+          </div>
         <hr>
-    
+        </div>
+
         <p>Загрузите новую версию документа:</p>
-        <input type="file" accept=".doc,.docx">
-    
+        <input type="file" id="doc-input" accept=".doc,.docx">
+
         <div class="dialog-buttons">
-          <button class="primary">Отправить</button>
+          <button class="primary" onclick="sendDoc(event)">Отправить</button>
           <button onclick="this.closest('dialog').close()">Закрыть</button>
         </div>
       </div>
     </dialog>
-    <dialog id="dialog-r" class="custom-dialog">
-      <div class="dialog-header">
-        <h2>Загруженные документы</h2>
-      </div>
-      <div class="dialog-body">
-        <div class="uploaded-section">
-          <a href="#" target="_blank" title="Скачать документ">Результат анализа производственного процесса</a>
-          <button class="delete-doc-btn" onclick="removeUploadedDoc(this)">×</button>
-        </div>
-    
-        <hr>
-    
-        <p>Загрузите новый результат заявки:</p>
-        <input type="file" accept=".doc,.docx">
-    
-        <div class="dialog-buttons">
-          <button class="primary">Отправить</button>
-          <button onclick="this.closest('dialog').close()">Закрыть</button>
-        </div>
-      </div>
-    </dialog>
+
     <dialog id="dialog-confirm-delete-docfile" class="custom-dialog">
       <div class="dialog-header">
         <h2>Подтверждение удаления</h2>
@@ -105,20 +92,22 @@
         </div>
       </div>
     </dialog>
-    
-    
+
+
     <!-- Диалог для добавления заявки -->
     <dialog id="dialog-add-doc" class="custom-dialog">
       <div class="dialog-header">
         <h2>Добавление заявки</h2>
       </div>
-    
+
       <form class="form-styled" onsubmit="addDoc(event)">
         <div class="form-field">
           <label for="add-doc-batch">Номер партии</label>
-          <input type="text" id="add-doc-batch" placeholder="П-001">
+          <select id="add-doc-batch">
+
+          </select>
         </div>
-    
+
         <div class="form-field">
           <label for="add-doc-category">Категория</label>
           <select id="add-doc-category">
@@ -128,7 +117,7 @@
             <option>Заказ</option>
           </select>
         </div>
-    
+
         <div class="dialog-buttons">
           <button type="submit" class="primary">Добавить</button>
           <button type="button" onclick="this.closest('dialog').close()">Закрыть</button>
@@ -150,8 +139,8 @@
         </div>
       </div>
     </dialog>
-    
-    
+
+
     <dialog id="dialog-edit-doc-id" class="custom-dialog">
       <div class="dialog-header">
         <h2>Редактирование заявки</h2>
@@ -167,7 +156,7 @@
         </div>
       </form>
     </dialog>
-    
+
     <!-- Диалог для редактирования заявки -->
     <dialog id="dialog-edit-doc-entry" class="custom-dialog">
       <div class="dialog-header">
@@ -178,7 +167,7 @@
           <label for="edit-doc-batch">Номер партии</label>
           <input type="text" id="edit-doc-batch" placeholder="П-125">
         </div>
-    
+
         <div class="form-field">
           <label for="edit-doc-category">Категория</label>
           <select id="edit-doc-category">
@@ -187,7 +176,7 @@
             <option>Обувь</option>
           </select>
         </div>
-    
+
         <div class="dialog-buttons">
           <button type="submit" class="primary">Сохранить</button>
           <button type="button" onclick="this.closest('dialog').close()">Закрыть</button>
@@ -225,13 +214,143 @@
     </div>
   </div>
 </dialog>
-
-
   </main>
   </section>
 
+  <dialog id="dialog-r" class="custom-dialog">
+    <div class="dialog-header">
+      <h2>Загруженные документы</h2>
+    </div>
+    <div class="dialog-body">
+      <div id="doc-results">
+        <div id="result-files">
+          <div class="uploaded-section">
+            <a href="#" target="_blank" title="Скачать документ">Результат анализа производственного процесса</a>
+            <button class="delete-doc-btn" onclick="removeUploadedDoc(event)">×</button>
+          </div>
+        </div>
+
+        <hr>
+      </div>
+
+      <p>Загрузите новый результат заявки:</p>
+      <input type="file" id="result-input" accept=".doc,.docx">
+
+      <div class="dialog-buttons">
+        <button class="primary" onclick="sendResult(event)">Отправить</button>
+        <button onclick="this.closest('dialog').close()">Закрыть</button>
+      </div>
+    </div>
+  </dialog>
 
   <script>
+    let openResultsDocId = null;
+
+    function openResults(event, id){
+      event.preventDefault();
+
+      fetch(`/docs/get/${id}/`).then(
+        response => response.json()
+      ).then(
+        response => response.document
+      ).then(d => {
+        let docsHTML = '';
+        console.log(d)
+        d.results.forEach(r => {
+          docsHTML += `<div class="uploaded-section">
+            <a href="${r.url}" target="_blank" title="Скачать документ">${r.name}</a>
+            <button class="delete-doc-btn" onclick="removeUploadedDoc(event, ${r.id})">×</button>
+          </div>`
+        })
+        if (docsHTML.length > 0){
+          docsHTML += '<hr>';
+        }
+        openResultsDocId = id;
+        document.getElementById("doc-results").innerHTML = docsHTML;
+        document.getElementById("dialog-r").showModal();
+      })
+    }
+    let sendDocDocId = null;
+
+    function sendResult(event){
+      event.preventDefault();
+      const fileInput = document.getElementById('result-input');
+      const formData = new FormData();
+      formData.append('file', fileInput.files[0]);
+
+      fetch(`/docs/${openResultsDocId}/add-result/`, {
+        method: "POST",
+        body: formData
+      }).then(response => {
+        if (response.ok){
+          alert("Результат добавлен!");
+          document.getElementById("dialog-r").close();
+        }
+      })
+    }
+
+    function removeUploadedRequest(event, id){
+      event.preventDefault();
+      fetch(`/docs/delete-request/${id}/`, {
+        method: "DELETE"
+      }).then(response => {
+        if (response.ok){
+          alert("Документ удалён!");
+          document.getElementById("dialog-z").close()
+        }
+      })
+    }
+
+    function openDoc(event, id){
+      fetch(`/docs/get/${id}/`).then(
+        response => response.json()
+      ).then(r => {
+        const d = r.document;
+        sendDocDocId = d.id;
+        if (d.request !== undefined && d.request !== null){
+          document.getElementById("doc-section").innerHTML = `
+              <div class="uploaded-section">
+                <a href="${d.request_url}" target="_blank" title="Скачать документ" id="doc-name">${d.request_name}</a>
+                <button class="delete-doc-btn" onclick="removeUploadedRequest(event, ${d.id})">×</button>
+              </div>
+              <hr>
+          `
+        }
+        else{
+          document.getElementById("doc-section").innerHTML = ``;
+        }
+        document.getElementById('dialog-z').showModal();
+      })
+    }
+
+    function sendDoc(event){
+      const fileInput = document.getElementById('doc-input');
+      const formData = new FormData();
+      formData.append('file', fileInput.files[0]);
+
+      // Отправляем файл на сервер
+      fetch(`/docs/edit/${sendDocDocId}/`, {
+          method: 'POST',
+          body: formData,
+      })
+      .then(response => {
+          if (response.ok) {
+              document.getElementById('dialog-z').close();
+          }
+          else{
+            throw new Error('Network response was not ok.');
+          }
+      })
+      .then(data => {
+          alert('Файл успешно загружен!');
+      })
+      .catch(error => {
+          console.error('Ошибка:', error);
+          alert('Произошла ошибка при загрузке файла.');
+      });
+    }
+
+
     let deleteDocId = null;
 
     function confirmDeleteDoc(event){
@@ -251,6 +370,19 @@
       })
     }
   let pendigAddDoc = null;
+
+  function openAddDoc(event){
+    event.preventDefault();
+
+    document.getElementById('dialog-add-doc').showModal();
+    let selectHTML = '';
+    fetch(`/batch/all/`).then(response => response.json()).then(response => response.batches).then(batches => {
+      batches.forEach(b => {
+        selectHTML += `<option value="${b.id}" >${b.name}</option>`
+      })
+      document.getElementById('add-doc-batch').innerHTML = selectHTML;
+    })
+  }
 
   function addDoc(event){
     event.preventDefault();
@@ -297,6 +429,18 @@
     })
   }
 
+  function createBatch(event){
+    event.preventDefault();
+
+    fetch(`/batch/add/`, {
+      method: "POST",
+    }).then(response => {
+      if (response.ok){
+        alert("Партия добавлена!")
+      }
+    })
+  }
+
   function openEditDoc() {
   const id = document.getElementById('edit-doc-id-input').value.trim();
   if (!id) {
@@ -311,9 +455,16 @@
 
 
 
-function removeUploadedDoc(button) {
-  const container = button.closest('.uploaded-section');
-  if (container) container.remove();
+function removeUploadedDoc(event, id) {
+  event.preventDefault();
+  fetch(`/docs/results/delete/${id}/`, {
+    method: "DELETE"
+  }).then(response => {
+    if (response.ok){
+      alert("Результат удалён!")
+      document.getElementById("dialog-r").close();
+    }
+  })
 }
 
 
@@ -324,7 +475,7 @@ function performDeleteDoc(event) {
   document.getElementById('dialog-confirm-delete-doc').close();
   fetch(`/docs/delete/${id}/`, {method: "DELETE"}).then(response => {
     if (response.status == 203){
-      alert(`Заявка с ID ${id} удалена.`);
+      alert(`Документ с ID ${id} удалена.`);
       const rows = document.querySelectorAll("tr");
       rows.forEach(r => {
         if (+r.cells[0].textContent === +id){
@@ -335,19 +486,7 @@ function performDeleteDoc(event) {
   })
 }
 
-function removeUploadedDoc(button) {
-  const container = button.closest('.uploaded-section');
-  if (container) container.remove();
-}
-
 let pendingDocToDelete = null;
-
-function removeUploadedDoc(button) {
-  // Сохраняем элемент, который хотим удалить
-  pendingDocToDelete = button.closest('.uploaded-section');
-  // Показываем окно подтверждения
-  document.getElementById('dialog-confirm-delete-docfile').showModal();
-}
 
 function confirmRemoveUploaded() {
   if (pendingDocToDelete) {

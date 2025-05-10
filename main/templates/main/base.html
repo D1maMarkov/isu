@@ -334,10 +334,30 @@
 <body>
   {% block content %}
   {% endblock %}
+
+<!-- Диалог: Подтверждение выхода -->
+<dialog class="custom-dialog" id="dialog-confirm-logout">
+    <div class="dialog-header">
+        <h2>Подтверждение выхода</h3>
+    </div>
+    <div class="form-styled">
+        <p>Вы уверены, что хотите выйти?</p>
+        <div class="dialog-buttons">
+            <button class="primary" onclick="logout(event)">Да</button>
+            <button class="secondary" onclick="this.closest('dialog').close()">Нет</button>
+        </div>
+    </div>
+</dialog>
+
 </body>
 <script>
-    document.querySelector(".avatar").addEventListener("click", e => {
+    function logout(event){
+        event.preventDefault();
         window.location.href = "/logout"
+    }
+
+    document.querySelector(".avatar").addEventListener("click", e => {
+        document.getElementById("dialog-confirm-logout").showModal();
     })
 </script>
 </html>

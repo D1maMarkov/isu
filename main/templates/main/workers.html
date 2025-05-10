@@ -26,8 +26,8 @@
         <input placeholder="ФИО">
         <select>
           <option>Все статусы</option>
-          <option>Активен</option>
-          <option>На паузе</option>
+          <option>В процессе</option>
+          <option>Завершено</option>
         </select>
         <input placeholder="Партия">
       </div>
@@ -35,8 +35,8 @@
       <div class="material-actions">
         <button onclick="filterWorkers()">Поиск</button>
         <button onclick="document.getElementById('dialog-add-worker').showModal()">Добавить строку</button>
-        <!-- <button onclick="document.getElementById('dialog-edit-fullname').showModal()">Редактировать ФИО</button> -->
-      </div>  
+        <button onclick="document.getElementById('dialog-edit-worker').showModal()">Изменить строку</button>
+      </div>
 
       <table>
         <thead>
@@ -55,7 +55,7 @@
             <tr><td>{{ w.id }}</td><td>{{ w.fullname }}</td><td>{{ w.status }}</td><td>{{ w.role }}</td><td>{{ w.batch }}</td><td>{{ w.date_begin }}</td><td>{{ w.date_end }}</td></tr>
           {% endfor %}
         </tbody>
-      </table>  
+      </table>
 
     </div>
 
@@ -69,7 +69,14 @@
       {% endfor %}
     </select></div>
     <div class="form-field"><label>Статус</label><input type="text" id="add-worker-status" required></div>
-    <div class="form-field"><label>Партия</label><input type="text" id="add-worker-batch" required></div>
+    <div class="form-field">
+      <label>Партия</label>
+    <select id="add-worker-batch" required>
+      {% for b in batches %}
+      <option value="{{ b.id }}">{{ b }}</option>
+      {% endfor %}
+    </select>
+    </div>
     <div class="form-field"><label>Начало</label><input type="date" id="add-worker-start" required></div>
     <div class="form-field"><label>Окончание</label><input type="date" id="add-worker-end" required></div>
     <div class="dialog-buttons">
@@ -92,80 +99,99 @@
 
   </section>
 
-  <!-- Диалог: редактирование ФИО -->
-  <dialog id="dialog-edit-fullname" class="custom-dialog">
+  <!-- Диалог: редактирование строки -->
+  <dialog id="dialog-edit-worker" class="custom-dialog">
     <div class="dialog-header">
-      <h2>Редактирование ФИО</h2>
+      <h2>Редактирование строки</h2>
     </div>
 
     <form class="form-styled">
-      <div class="form-field"><input type="text" id="edit-fullname-id" placeholder="ID" required></div>
-      <div class="form-field"><input type="text" id="edit-fullname" placeholder="ФИО" required></div>
+      <div class="form-field"><input type="text" id="edit-id" placeholder="ID" required></div>
+      <div class="form-field">
+        <select id="edit-batch">
+          {% for b in batches %}
+          <option value="{{ b.id }}">{{ b }}</option>
+          {% endfor %}
+        </select>
+      </div>
+      <div class="form-field"><input type="date" id="edit-date-begin" placeholder="Начало" required></div>
+      <div class="form-field"><input type="date" id="edit-date-end" placeholder="Конец" required></div>
+      <div class="form-field"><input type="text" id="edit-status" placeholder="Статус" required></div>
       <div class="dialog-buttons">
-        <button type="button" onclick="confirmEditFullname(event)">Изменить</button>
+        <button type="button" onclick="confirmEdit(event)">Изменить</button>
         <button type="button" onclick="this.closest('dialog').close()">Отмена</button>
       </div>
     </form>
   </dialog>
-  
-  <!-- Диалог: подтверждение редактирования ФИО -->
-  <dialog id="dialog-confirm-edit-fullname" class="custom-dialog">
+
+  <!-- Диалог: подтверждение редактирования -->
+  <dialog id="dialog-confirm-edit" class="custom-dialog">
     <div class="dialog-header"><h2>Подтверждение изменения</h2></div>
     <div class="form-styled">
-      <p>Вы уверены, что хотите редактировать ФИО работника <strong id="confirm-edit-fullname-id"></strong>: <strong id="confirm-edit-fullname-data"></strong>?</p>
+      <p>Вы уверены, что хотите редактировать ФИО работника <strong id="confirm-edit-id"></strong>: <strong id="confirm-edit-data"></strong>?</p>
       <div class="dialog-buttons">
-        <button onclick="editFullname(event)">Да</button>
+        <button onclick="edit(event)">Да</button>
         <button onclick="this.closest('dialog').close()">Нет</button>
       </div>
     </div>
   </dialog>
   <script>
 
-let newFullname = null;
-let newFullnameId = null;
-  function confirmEditFullname(event){
+let pendingEdit = null;
+  function confirmEdit(event){
     event.preventDefault();
-    const id = document.getElementById('edit-fullname-id').value.trim();
+    const id = document.getElementById('edit-id').value.trim();
     fetch(`/ceh/workers/get/${id}`).then(response => {
       if (response.status == 404){
         return alert("Нет работника с таким ID")
       }
       if (response.status == 200){
-        newFullname = document.getElementById('edit-fullname').value.trim();
-        newFullnameId = id;
-        document.getElementById("confirm-edit-fullname-data").textContent = newFullname;
-        document.getElementById("confirm-edit-fullname-id").textContent = id;
-        document.getElementById('dialog-edit-fullname').close();
-        document.getElementById('dialog-confirm-edit-fullname').showModal(); 
+        pendingEdit = {
+          batch: document.getElementById('edit-batch').value.trim(),
+          date_begin: document.getElementById('edit-date-begin').value.trim(),
+          date_end: document.getElementById('edit-date-end').value.trim(),
+          status: document.getElementById('edit-status').value.trim(),
+        }
+
+        document.getElementById("confirm-edit-data").textContent = `
+          Партия: ${pendingEdit.batch},
+          Начало: ${pendingEdit.date_begin},
+          Конец: ${pendingEdit.date_end},
+          Статус: ${pendingEdit.status}
+        `;
+        document.getElementById("confirm-edit-id").textContent = id;
+        document.getElementById('dialog-edit-worker').close();
+        document.getElementById('dialog-confirm-edit').showModal();
       }
     })
   }
 
-  function editFullname(event){
+  function edit(event){
     event.preventDefault();
-    fetch(`/ceh/workers/edit/${newFullnameId}`, {
+    const id = document.getElementById("edit-id").value;
+    fetch(`/ceh/workers/edit/${id}`, {
       method: "POST",
-      body: JSON.stringify({
-        fullname: newFullname
-      })
+      body: JSON.stringify(pendingEdit)
     }).then(response => {
         if (response.status == 202){
           const rows = document.querySelectorAll('table tr');
           rows.forEach(row => {
-            if (+row.cells[0].textContent === +newFullnameId) {
-              row.cells[1].textContent = newFullname;
+            if (+row.cells[0].textContent === +id) {
+              row.cells[2].textContent = pendingEdit.status;
+              row.cells[4].textContent = pendingEdit.batch;
+              row.cells[5].textContent = pendingEdit.date_begin;
+              row.cells[6].textContent = pendingEdit.date_end;
             }
           });
-          
-          newFullname = null;
-          newFullnameId = null;
-          document.getElementById("dialog-edit-fullname").querySelector("form").reset();
-          document.getElementById("dialog-edit-fullname").close();
-          document.getElementById("dialog-confirm-edit-fullname").close()
+
+          pendingEdit = null;
+          document.getElementById("dialog-edit-worker").querySelector("form").reset();
+          document.getElementById("dialog-edit-worker").close();
+          document.getElementById("dialog-confirm-edit").close()
         }
     })
   }
-  
+
 
   function openEditDoc() {
   const id = document.getElementById('edit-doc-id-input').value.trim();
@@ -238,7 +264,7 @@ function filterWorkers() {
     tbody.innerHTML = '';
     response.workers.forEach(w => {
       const row = document.createElement('tr');
-      row.innerHTML = `<td>${w.id}</td><td>${w.fullname}</td><td>${w.status}</td><td>${w.batch}</td><td>${w.role}</td><td>${w.start}</td><td>${w.end}</td>`;
+      row.innerHTML = `<td>${w.id}</td><td>${w.fullname}</td><td>${w.status}</td><td>${w.role}</td><td>${w.batch}</td><td>${w.date_begin}</td><td>${w.date_end}</td>`;
       tbody.appendChild(row);
     })
   })

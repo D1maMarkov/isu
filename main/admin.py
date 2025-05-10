@@ -1,12 +1,17 @@
 from django.contrib import admin
+from django.contrib.admin import AdminSite
 
 from main.admin_form import CustomAuthenticationAdminForm
-from main.models import Batch, DefectiveProducts, FinishedProducts, Materials, OveruseOfMaterials, User, Worker
-
-
-
-from django.contrib import admin
-from django.contrib.admin import AdminSite
+from main.models import (
+    Batch,
+    DefectiveProducts,
+    DocumentResult,
+    FinishedProducts,
+    Materials,
+    OveruseOfMaterials,
+    User,
+    Worker,
+)
 
 
 class MyAdminSite(AdminSite):
@@ -23,3 +28,4 @@ admin.site.register(Materials)
 admin.site.register(Batch)
 admin.site.register(User)
 admin.site.register(Worker)
+admin.site.register(DocumentResult)

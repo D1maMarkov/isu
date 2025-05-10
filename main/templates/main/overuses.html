@@ -20,9 +20,9 @@
 
   <!-- Склад -->
 
-  
+
   <!-- Диалог: удаление ввод ID -->
-  
+
   <section id="sklad">
 <div class="table-section" id="overuse">
   <h2>Перерасход</h2>
@@ -59,8 +59,21 @@
   <dialog id="dialog-add-over" class="custom-dialog">
     <div class="dialog-header"><h2>Добавить строку</h2></div>
     <form class="form-styled" onsubmit="addOverRow(event)">
-      <div class="form-field"><label>Номер партии</label><input type="text" id="add-over-batch" required></div>
-      <div class="form-field"><label>ID материала</label><input type="text" id="add-over-material" required></div>
+      <div class="form-field"><label>Номер партии</label>
+        <select id="add-over-batch">
+          {% for b in batches %}
+          <option value="{{ b.id }}">{{ b }}</option>
+          {% endfor %}
+        </select>
+      </div>
+      <div class="form-field">
+        <label>ID материала</label>
+        <select id="add-over-material">
+          {% for m in materials %}
+          <option value="{{ m.id }}">{{ m }}</option>
+          {% endfor %}
+        </select>
+      </div>
       <div class="form-field"><label>Количество</label><input type="number" id="add-over-qty" required></div>
       <div class="dialog-buttons">
         <button class="primary" type="submit">Добавить</button>
@@ -74,6 +87,14 @@
     <div class="dialog-header"><h2>Изменить строку</h2></div>
     <form class="form-styled" onsubmit="editOverRow(event)">
       <div class="form-field"><label>ID</label><input type="text" id="edit-over-id" required></div>
+      <label>Материал</label>
+      <div class="form-field">
+        <select id="edit-over-material">
+          {% for m in materials %}
+            <option value="{{ m.id }}">{{ m }}</option>
+          {% endfor %}
+        </select>
+      </div>
       <div class="form-field"><label>Новое количество</label><input type="number" id="edit-over-qty" required></div>
       <div class="dialog-buttons">
         <button class="primary" type="submit">Сохранить</button>
@@ -138,11 +159,6 @@
   </section>
 
   <script>
-    const mainLinks = document.querySelectorAll('.menu a');
-    const button = document.getElementById('status-button');
-  const options = document.getElementById('status-options');
-
-
 function confirmDeleteOver() {
   const id = document.getElementById('delete-over-id').value.trim();
   const rows = document.querySelectorAll('#over-table-body tr');
@@ -178,12 +194,13 @@ let pendingAdd = {};
 function addOverRow(e) {
   e.preventDefault();
 
+  const select = document.getElementById('add-over-material');
   pendingAdd.batch = document.getElementById('add-over-batch').value;
-  pendingAdd.mat = document.getElementById('add-over-material').value;
+  pendingAdd.mat = select.value;
   pendingAdd.qty = document.getElementById('add-over-qty').value;
 
   document.getElementById('confirm-add-data').textContent =
-    `Партия: ${pendingAdd.batch}, Материал: ${pendingAdd.mat}, Кол-во: ${pendingAdd.qty}`;
+    `Партия: ${pendingAdd.batch}, Материал: ${select.querySelectorAll("option")[select.selectedIndex].textContent}, Кол-во: ${pendingAdd.qty}`;
 
   document.getElementById('dialog-confirm-add-over').showModal();
 }
@@ -201,7 +218,7 @@ function performAddOver() {
   }).then(response => {
     if (response.status == 201){
       response.json().then(o => {
-        row.innerHTML = `<td>${o.batch}</td><td>${o.material}</td><td>${o.quantity}</td>`;
+        row.innerHTML = `<td>${o.id}</td><td>${o.batch}</td><td>${o.material}</td><td>${o.quantity}</td>`;
         tbody.prepend(row);
 
         document.getElementById('dialog-confirm-add-over').close();
@@ -224,17 +241,18 @@ let pendingEdit = {};
 
 function editOverRow(e) {
   e.preventDefault();
+  const select = document.getElementById('edit-over-material');
   pendingEdit.id = document.getElementById('edit-over-id').value.trim();
   pendingEdit.qty = document.getElementById('edit-over-qty').value.trim();
+  pendingEdit.material_id = select.value.trim();
 
-  const rows = document.querySelectorAll('#over-table-body tr');
   fetch(`/overs/get/${document.getElementById('edit-over-id').value.trim()}`).then(response => {
     if (response.status == 404){
       return alert("Запись не найдена.");
     }
     if (response.status == 200){
       document.getElementById('confirm-edit-data').textContent =
-      `ID: ${pendingEdit.id}, Новое кол-во: ${pendingEdit.qty}`;
+      `ID: ${pendingEdit.id}, Новое кол-во: ${pendingEdit.qty}, Новый материал: ${select.querySelectorAll("option")[select.selectedIndex].textContent}`;
 
       document.getElementById('dialog-confirm-edit-over').showModal();
     }

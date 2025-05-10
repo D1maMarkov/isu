@@ -24,7 +24,7 @@
   <section id="sklad">
     <div class="table-section" id="products">
       <h2>Готовые изделия</h2>
-    
+
       <div class="filters">
         <input type="text" id="filter-batch" placeholder="Номер партии">
         <input type="text" id="filter-name" placeholder="Название">
@@ -35,7 +35,7 @@
         </select>
         <input type="text" id="filter-size" placeholder="Размер">
       </div>
-    
+
       <div class="product-actions">
         <button onclick="filterProducts()">Поиск</button>
         <button onclick="document.getElementById('dialog-add-product').showModal()">Добавить изделие</button>
@@ -43,7 +43,7 @@
         <button onclick="document.getElementById('dialog-edit-row-id').showModal()">Изменить строку</button>
         <button onclick="document.getElementById('dialog-delete-row-id').showModal()">Удалить строку</button>
       </div>
-    
+
       <table>
         <thead>
           <tr><th>ID</th><th>Партия</th><th>Название</th><th>Размер</th><th>Кол-во</th></tr>
@@ -55,13 +55,19 @@
         </tbody>
       </table>
     </div>
-    
+
 
     <!--  dialog: Добавить -->
 <dialog id="dialog-add-product" class="custom-dialog">
   <div class="dialog-header"><h2>Добавление новой записи</h2></div>
   <form class="form-styled" onsubmit="performAddProduct(event)">
-    <div class="form-field"><label>Номер партии</label><input type="text" id="product-batch"></div>
+    <div class="form-field"><label>Номер партии</label>
+      <select id="product-batch">
+        {% for b in batches %}
+        <option value="{{ b.id }}">{{ b }}</option>
+        {% endfor %}
+      </select>
+    </div>
     <div class="form-field"><label>Название</label><input type="text" id="product-name"></div>
     <div class="form-field"><label>Размер</label><input type="text" id="product-size"></div>
     <div class="form-field"><label>Количество</label><input type="number" id="product-qty"></div>
@@ -204,7 +210,7 @@
   <script>
 let currentEditRow = null;
 
-function perfomAddProduct(e) {
+function performAddProduct(e) {
   e.preventDefault();
   pendingProductAction = {
     batch: document.getElementById('product-batch').value,
@@ -214,9 +220,9 @@ function perfomAddProduct(e) {
   };
 
   const text = `
-    Партия: ${pendingProductAction.batch}, 
-    Название: ${pendingProductAction.name}, 
-    Размер: ${pendingProductAction.size}, 
+    Партия: ${pendingProductAction.batch},
+    Название: ${pendingProductAction.name},
+    Размер: ${pendingProductAction.size},
     Кол-во: ${pendingProductAction.qty}`;
 
   document.getElementById('confirm-add-product-data').textContent = text;
@@ -426,7 +432,7 @@ function performRowEdit() {
       batch: pendingProductAction.batch,
       name: pendingProductAction.name,
       size: pendingProductAction.size,
-      quantity: pendingProductAction.qty, 
+      quantity: pendingProductAction.qty,
     })
   })
 }

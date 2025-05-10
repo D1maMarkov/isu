@@ -15,7 +15,7 @@
   <div class="submenu" id="submenu-sklad">
     <button data-target="materials" class="active">Материалы</button>
     <button data-target="products"><a href="/warehouse/products/">Готовые изделия</a></button>
-    <button data-target="overuse">Перерасход</button>
+    <button data-target="overuse"><a href="/warehouse/overuse/" >Перерасход</a></button>
   </div>
 
   <!-- Склад -->
@@ -31,7 +31,7 @@
       </div>
     </form>
   </dialog>
-  
+
   <dialog id="dialog-confirm-delete-material" class="custom-dialog">
     <div class="dialog-header"><h2>Подтверждение удаления</h2></div>
     <div class="form-styled">
@@ -42,8 +42,8 @@
       </div>
     </div>
   </dialog>
-  
-  
+
+
   <section id="sklad" style="display: block;">
     <div class="table-section" id="materials" style="display: block;">
       <h2>Материалы</h2>
@@ -90,7 +90,7 @@
           {% endfor %}
         </tbody>
       </table>
-    
+
    <!-- Диалог: Добавить -->
 <dialog class="custom-dialog" id="dialog-add-material">
   <div class="dialog-header">
@@ -180,22 +180,6 @@
 </dialog>
     </div>
 
-    <!--  dialog: Добавить -->
-<dialog id="dialog-add-product" class="custom-dialog">
-  <div class="dialog-header"><h2>Добавление новой записи</h2></div>
-  <form class="form-styled" onsubmit="addProduct(event)">
-    <div class="form-field"><label>Номер партии</label><input type="text" id="product-batch"></div>
-    <div class="form-field"><label>Название</label><input type="text" id="product-name"></div>
-    <div class="form-field"><label>Размер</label><input type="text" id="product-size"></div>
-    <div class="form-field"><label>Количество</label><input type="number" id="product-qty"></div>
-    <div class="dialog-buttons">
-      <button class="primary" type="submit">Добавить</button>
-      <button type="button" onclick="this.closest('dialog').close()">Закрыть</button>
-    </div>
-  </form>
-</dialog>
-
-
 <!--  dialog: Изменить строку -->
 <dialog id="dialog-edit-row-id" class="custom-dialog">
   <div class="dialog-header"><h2>Редактирование строки</h2></div>
@@ -281,11 +265,16 @@
 
 <!-- Диалог: Подтверждение редактирование кол-ва -->
 <dialog class="custom-dialog" id="dialog-confirm-edit-material-qty">
-  <h3>Подтверждение изменения</h3>
-  <p>Вы уверены, что хотите изменить запись <strong id="confirm-edit-material-qty-id"></strong>: <strong id="confirm-edit-material-qty-qty"></strong>?</p>
-  <div class="dialog-buttons">
-    <button class="primary" onclick="editMaterialQty(event)">Да</button>
-    <button class="secondary" onclick="document.getElementById('dialog-confirm-delete-material').close()">Нет</button>
+  <div class="dialog-header">
+    <h2>Подтверждение изменения</h2>
+  </div>
+
+  <div class="form-styled">
+    <p>Вы уверены, что хотите изменить запись <strong id="confirm-edit-material-qty-id"></strong>: <strong id="confirm-edit-material-qty-qty"></strong>?</p>
+    <div class="dialog-buttons">
+      <button class="primary" onclick="editMaterialQty(event)">Да</button>
+      <button class="secondary" onclick="this.closest('dialog').close()">Нет</button>
+    </div>
   </div>
 </dialog>
 
@@ -363,7 +352,7 @@ function performAddMaterial(e) {
 
   const text = `
     Название: ${pendingMaterialAction.name},
-    Характеристика: ${pendingMaterialAction.char},
+    Характеристика: ${pendingMaterialAction.features},
     Кол-во: ${pendingMaterialAction.qty},
     Цена: ${pendingMaterialAction.price},
     Поставщик: ${pendingMaterialAction.supplier}
@@ -534,12 +523,14 @@ function confirmDeleteMaterial() {
       return alert("Не найдено");
     }
     else if (response.status == 200){
-      rows.forEach(row => {
-        if (+row.cells[0].textContent === +id) pendingMaterialToDelete = row;
-      });
-      document.getElementById('confirm-delete-material-id').textContent = id;
-      document.getElementById('dialog-delete-material').close();
-      document.getElementById('dialog-confirm-delete-material').showModal();
+      response.json().then(response => {
+        rows.forEach(row => {
+          if (+row.cells[0].textContent === +id) pendingMaterialToDelete = row;
+        });
+        document.getElementById('confirm-delete-mat').textContent = response.material.name;
+        document.getElementById('dialog-delete-material').close();
+        document.getElementById('dialog-confirm-delete-material').showModal();
+      })
     }
   })
 }

@@ -24,7 +24,7 @@ class Materials(models.Model):
     name = models.CharField(max_length=100, verbose_name="Название материала")
     quantity = models.IntegerField(verbose_name="Количество на складе")
     features = models.CharField(max_length=255, verbose_name="Характеристики материала")
-    price = models.FloatField(verbose_name="Цена за единицу")
+    price = models.IntegerField(verbose_name="Цена за единицу")
     supplier = models.CharField(max_length=100, verbose_name="Название поставщика")
 
     class Meta:

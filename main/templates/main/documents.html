@@ -271,6 +271,18 @@
     </div>
   </dialog>
 
+  <!-- Диалог: подтверждение удаления реквеста -->
+<dialog id="dialog-confirm-delete-request" class="custom-dialog">
+  <div class="dialog-header"><h2>Подтверждение удаления</h2></div>
+  <div class="form-styled">
+    <p>Вы уверены, что хотите удалить файл?</p>
+    <div class="dialog-buttons">
+      <button onclick="removeUploadedRequest(event)">Да</button>
+      <button onclick="this.closest('dialog').close()">Нет</button>
+    </div>
+  </div>
+</dialog>
+
   <script>
     let openResultsDocId = null;
     let pendingEditDoc = null;
@@ -332,14 +344,15 @@
       })
     }
 
-    function removeUploadedRequest(event, id){
+    function removeUploadedRequest(event){
       event.preventDefault();
-      fetch(`/docs/delete-request/${id}/`, {
+      fetch(`/docs/delete-request/${removeRequestDocId}/`, {
         method: "DELETE"
       }).then(response => {
         if (response.ok){
           alert("Документ удалён!");
-          document.getElementById("dialog-z").close()
+          document.getElementById("dialog-z").close();
+          document.getElementById("dialog-confirm-delete-request").close();
         }
       })
     }
@@ -354,7 +367,7 @@
           document.getElementById("doc-section").innerHTML = `
               <div class="uploaded-section">
                 <a href="${d.request_url}" target="_blank" title="Скачать документ" id="doc-name">${d.request_name}</a>
-                <button class="delete-doc-btn" onclick="removeUploadedRequest(event, ${d.id})">×</button>
+                <button class="delete-doc-btn" onclick="confirmRemoveUploadedRequest(event, ${d.id})">×</button>
               </div>
               <hr>
           `
@@ -470,6 +483,15 @@
         })
       }
     })
+  }
+
+  let removeRequestDocId = null;
+
+  function confirmRemoveUploadedRequest(event, id){
+    event.preventDefault();
+
+    removeRequestDocId = id;
+    document.getElementById("dialog-confirm-delete-request").showModal();
   }
 
   function createBatch(event){

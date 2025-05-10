@@ -72,16 +72,17 @@ def edit_over(request: HttpRequest, id: str):
     id = int(id)
     p = get_object_or_404(Overs, id=id)
     d = json.loads(request.body)
-    if "batch" in d:
-        p.batch_id = d["batch"]
-    if "material" in d:
-        p.material_id = d["material"]
+    print(d)
+    if "batch_id" in d:
+        p.batch_id = int(d["batch_id"])
+    if "material_id" in d:
+        p.material_id = int(d["material_id"])
     if "quantity" in d:
         p.quantity = d["quantity"]
 
     p.save()
 
-    return HttpResponse(status=202)
+    return JsonResponse({"over": OverSerializer(p).data})
 
 
 def filter_overs(request: HttpRequest):

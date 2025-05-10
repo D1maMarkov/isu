@@ -461,12 +461,13 @@ function openEditMaterialRow() {
       rows.forEach(row => {
         if (+row.cells[0].textContent === +id) editingRow = row;
       });
-      if (!editingRow) return alert("Запись не найдена");
+
       document.getElementById('edit-mat-name').value = editingRow.cells[1].textContent;
       document.getElementById('edit-mat-char').value = editingRow.cells[2].textContent;
       document.getElementById('edit-mat-qty').value = editingRow.cells[3].textContent;
       document.getElementById('edit-mat-price').value = editingRow.cells[4].textContent;
       document.getElementById('edit-mat-supplier').value = editingRow.cells[5].textContent;
+      console.log(editingRow)
       document.getElementById('dialog-edit-material-row-id').close();
       document.getElementById('dialog-edit-material-form').showModal();
     }

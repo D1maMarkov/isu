@@ -288,7 +288,7 @@ function performAddWorker() {
     if (response.status == 201){
       response.json().then(w => {
         w = w.worker
-        row.innerHTML = `<td>${w.id}</td><td>${w.fullname}</td><td>${w.status}</td><td>${w.batch}</td><td>${w.role}</td><td>${w.date_begin}</td><td>${w.date_end}</td>`;
+        row.innerHTML = `<td>${w.id}</td><td>${w.fullname}</td><td>${w.status}</td><td>${w.role}</td><td>${w.batch}</td><td>${w.date_begin}</td><td>${w.date_end}</td>`;
         tbody.prepend(row);
 
         document.getElementById('dialog-confirm-add-worker').close();

@@ -1,3 +1,4 @@
+from datetime import timezone
 from rest_framework import serializers
 
 from main.models import Batch
@@ -11,6 +12,7 @@ from main.models import (
     Worker,
 )
 from utils.get_file_name import get_file_name
+import pytz
 
 
 class FinishedProductsSerializer(serializers.ModelSerializer):
@@ -49,7 +51,7 @@ class ResultSerialzier(serializers.ModelSerializer):
         model = DocumentResult
         fields = ["id", "name", "url"]
 
-
+from django.utils import timezone
 class DocumentSerializer(serializers.ModelSerializer):
     id = serializers.SerializerMethodField()
     created_at = serializers.SerializerMethodField()
@@ -83,10 +85,10 @@ class DocumentSerializer(serializers.ModelSerializer):
         return ResultSerialzier(obj.results.all(), many=True).data
 
     def get_created_at(self, obj):
-        return obj.created_at.strftime("%Y-%m-%d %H:%M")
+        return timezone.localtime(obj.created_at, timezone=pytz.timezone('Europe/Moscow')).strftime("%Y-%m-%d %H:%M")
 
     def get_updated_at(self, obj):
-        return obj.updated_at.strftime("%Y-%m-%d %H:%M")
+        return timezone.localtime(obj.updated_at, timezone=pytz.timezone('Europe/Moscow')).strftime("%Y-%m-%d %H:%M")
 
     def get_id(self, obj):
         return str(obj.id).zfill(3)

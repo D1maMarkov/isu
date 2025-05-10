@@ -85,7 +85,7 @@
   <form class="form-styled" onsubmit="openUpdateProductQty(event)">
     <div class="form-field">
       <label for="qty-edit-id">ID изделия</label>
-      <select id="edit-row-id">
+      <select id="edit-row-qty-id">
         {% for p in products %}
         <option value="{{ p.id }}">{{ p.id }} {{ p.product_name }}</option>
         {% endfor %}
@@ -230,7 +230,7 @@
     function openUpdateProductQty(event){
       event.preventDefault();
 
-      const id = document.getElementById('qty-edit-id').value.trim();
+      const id = document.getElementById('edit-row-qty-id').value.trim();
 
       fetch(`/products/get/${id}`).then(response => {
         if (response.status == 404){
@@ -274,7 +274,7 @@ function performAddProduct(e) {
 
 function updateProductQty(e) {
   e.preventDefault();
-  const id = document.getElementById('qty-edit-id').value.trim();
+  const id = document.getElementById('edit-row-qty-id').value.trim();
   const qty = document.getElementById('qty-edit-value').value.trim();
   const rows = document.querySelectorAll('#products-table-body tr');
 
@@ -292,11 +292,12 @@ let editingRow = null;
 
 function openEditRow() {
   const id = document.getElementById('edit-row-id').value.trim();
-  const rows = document.querySelectorAll('#products-table-body tr');
+  console.log(id)
+  const rows = document.querySelectorAll('tr');
   editingRow = null;
 
   rows.forEach(row => {
-    if (row.cells[0].textContent === id) {
+    if (+row.cells[0].textContent === +id) {
       editingRow = row;
     }
   });

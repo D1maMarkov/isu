@@ -35,26 +35,25 @@ class GetBatches(BaseView):
 
 class DocsPage(BaseView, TemplateView):
     template_name = "main/documents.html"
-    exclude_roles = [UserRole.WarehouseManager]
 
     @property
     def can_load_request(self):
         user = self.request.user
-        if user.role in [UserRole.Sewer, UserRole.PackerInspector, UserRole.Designer, UserRole.PatternDesigner]:
+        if user.role in [UserRole.WarehouseManager, UserRole.Sewer, UserRole.PackerInspector, UserRole.Designer, UserRole.PatternDesigner]:
             return False
         return True
 
     @property
     def can_edit(self):
         user = self.request.user
-        if user.role in [UserRole.Sewer, UserRole.PatternDesigner, UserRole.Designer, UserRole.PackerInspector]:
+        if user.role in [UserRole.WarehouseManager, UserRole.Sewer, UserRole.PatternDesigner, UserRole.Designer, UserRole.PackerInspector]:
             return False
         return True
 
     @property
     def can_load_result(self):
         user = self.request.user
-        if user.role in [UserRole.Sewer]:
+        if user.role in [UserRole.Sewer, UserRole.WarehouseManager]:
             return False
         return True
 
@@ -63,7 +62,8 @@ class DocsPage(BaseView, TemplateView):
         context = super().get_context_data(**kwargs)
         if self.request.user.role in [UserRole.Designer, UserRole.PatternDesigner]:
             docs = Document.objects.filter(category="Задание")
-
+        elif self.request.user.role in [UserRole.WarehouseManager]:
+            docs = Document.objects.filter(category="Заказ")
         elif self.request.user.role in [
             UserRole.Sewer,
             UserRole.PackerInspector,

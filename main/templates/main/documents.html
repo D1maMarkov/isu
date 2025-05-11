@@ -283,6 +283,18 @@
   </div>
 </dialog>
 
+ <!-- Диалог: подтверждение удаления результата -->
+ <dialog id="dialog-confirm-delete-result" class="custom-dialog">
+  <div class="dialog-header"><h2>Подтверждение удаления</h2></div>
+  <div class="form-styled">
+    <p>Вы уверены, что хотите удалить файл?</p>
+    <div class="dialog-buttons">
+      <button onclick="removeUploadedDoc(event)">Да</button>
+      <button onclick="this.closest('dialog').close()">Нет</button>
+    </div>
+  </div>
+</dialog>
+
   <script>
     let openResultsDocId = null;
     let pendingEditDoc = null;
@@ -314,7 +326,7 @@
           docsHTML += `<div class="uploaded-section">
             <a href="${r.url}" target="_blank" title="Скачать документ">${r.name}</a>
             {% if can_load_result %}
-            <button class="delete-doc-btn" onclick="removeUploadedDoc(event, ${r.id})">×</button>
+            <button class="delete-doc-btn" onclick="confirmRemoveUploadedDoc(event, ${r.id})">×</button>
             {% endif %}
           </div>`
         })
@@ -428,6 +440,7 @@
         }
       })
     }
+
   let pendigAddDoc = null;
 
   function openAddDoc(event){
@@ -495,6 +508,13 @@
 
     removeRequestDocId = id;
     document.getElementById("dialog-confirm-delete-request").showModal();
+  }
+
+  function confirmRemoveUploadedResult(event, id){
+    event.preventDefault();
+
+    removeResultDocId = id;
+    document.getElementById("dialog-confirm-delete-result").showModal();
   }
 
   function createBatch(event){
@@ -572,15 +592,25 @@
 }
 
 
-
-function removeUploadedDoc(event, id) {
+let removeResultDocId = null;
+function confirmRemoveUploadedDoc(event, id) {
   event.preventDefault();
-  fetch(`/docs/results/delete/${id}/`, {
+
+  removeResultDocId = id;
+
+  document.getElementById("dialog-confirm-delete-result").showModal();
+  document.getElementById("dialog-r").close();
+}
+
+function removeUploadedDoc(event) {
+  event.preventDefault();
+  fetch(`/docs/results/delete/${removeResultDocId}/`, {
     method: "DELETE"
   }).then(response => {
     if (response.ok){
       alert("Результат удалён!")
       document.getElementById("dialog-r").close();
+      document.getElementById("dialog-confirm-delete-result").close();
     }
   })
 }

@@ -7,6 +7,7 @@ from django.utils.decorators import method_decorator
 from django.views.decorators.csrf import csrf_exempt
 from django.views.generic import TemplateView
 
+from entities.user import UserRole
 from main.models import Batch
 from main.models import DefectiveProducts as Defects
 from main.serializers import DefectSerializer
@@ -15,6 +16,7 @@ from main.views.base import BaseView
 
 class DefectsPage(BaseView, TemplateView):
     template_name = "main/defects.html"
+    exclude_roles = [UserRole.WarehouseManager, UserRole.PatternDesigner]
 
     def get_context_data(self, **kwargs):
         context = super().get_context_data(**kwargs)

@@ -16,7 +16,7 @@ from main.views.base import BaseView
 
 class DefectsPage(BaseView, TemplateView):
     template_name = "main/defects.html"
-    exclude_roles = [UserRole.WarehouseManager, UserRole.PatternDesigner]
+    exclude_roles = [UserRole.WarehouseManager, UserRole.PatternDesigner, UserRole.PackerInspector, UserRole.Designer]
 
     def get_context_data(self, **kwargs):
         context = super().get_context_data(**kwargs)

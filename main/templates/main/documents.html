@@ -390,6 +390,14 @@
         else{
           document.getElementById("doc-section").innerHTML = ``;
         }
+
+        if (d.category === 'Заказ' && userRole === 'Раскройщик'){
+          document.getElementById("doc-input").disabled = false;
+          console.log("ofjeiogeriogheio")
+        }
+        else{
+          document.getElementById("doc-input").disabled = !can_load_request;
+        }
         document.getElementById('dialog-z').showModal();
       })
     }
@@ -591,6 +599,12 @@
   document.getElementById('dialog-edit-doc').showModal();
 }
 
+const userRole = "{{ request.user.role }}";
+const bools = {
+  False: false,
+  True: true
+}
+const can_load_request = bools["{{ can_load_request }}"];
 
 let removeResultDocId = null;
 function confirmRemoveUploadedDoc(event, id) {

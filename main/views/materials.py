@@ -15,7 +15,7 @@ from main.views.base import BaseView
 
 class MaterialsPage(BaseView, TemplateView):
     template_name = "main/materials.html"
-    enable_roles = [UserRole.Cutter, UserRole.WarehouseManager, UserRole.PatternDesigner]
+    enable_roles = [UserRole.WarehouseManager, UserRole.PatternDesigner]
 
     @property
     def can_edit(self):

@@ -17,7 +17,7 @@ from main.views.base import BaseView
 
 class WorkersPage(BaseView, TemplateView):
     template_name = "main/workers.html"
-    exclude_roles = [UserRole.Sewer, UserRole.WarehouseManager,  UserRole.PatternDesigner]
+    exclude_roles = [UserRole.Cutter, UserRole.Sewer, UserRole.Designer, UserRole.WarehouseManager,  UserRole.PatternDesigner, UserRole.PackerInspector]
 
     def get_context_data(self, **kwargs):
         context = super().get_context_data(**kwargs)

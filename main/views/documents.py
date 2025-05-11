@@ -39,14 +39,14 @@ class DocsPage(BaseView, TemplateView):
     @property
     def can_load_request(self):
         user = self.request.user
-        if user.role in [UserRole.WarehouseManager, UserRole.Sewer, UserRole.PackerInspector, UserRole.Designer, UserRole.PatternDesigner]:
+        if user.role in [UserRole.WarehouseManager, UserRole.Cutter, UserRole.Sewer, UserRole.PackerInspector, UserRole.Designer, UserRole.PatternDesigner]:
             return False
         return True
 
     @property
     def can_edit(self):
         user = self.request.user
-        if user.role in [UserRole.WarehouseManager, UserRole.Sewer, UserRole.PatternDesigner, UserRole.Designer, UserRole.PackerInspector]:
+        if user.role in [UserRole.WarehouseManager, UserRole.Cutter, UserRole.Sewer, UserRole.PatternDesigner, UserRole.Designer, UserRole.PackerInspector]:
             return False
         return True
 
@@ -81,6 +81,7 @@ class DocsPage(BaseView, TemplateView):
         context["can_load_result"] = self.can_load_result
 
         context["can_edit"] = self.can_edit
+        print(self.can_load_request)
 
         return context
 

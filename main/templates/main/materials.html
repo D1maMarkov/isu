@@ -32,8 +32,8 @@
   </dialog>
 
 
-  <section id="sklad" style="display: block;">
-    <div class="table-section" id="materials" style="display: block;">
+  <section id="sklad">
+    <div class="table-section" id="materials">
       <h2>Материалы</h2>
       <div class="filters">
         <input placeholder="ID">
@@ -56,10 +56,10 @@
        <!-- Кнопки -->
 <div class="material-actions">
   <button onclick="filterMaterials()">Поиск</button>
-  <button onclick="document.getElementById('dialog-add-material').showModal()">Добавить материал</button>
-  <button onclick="document.getElementById('dialog-edit-material-qty-entry').showModal()">Изменить количество</button>
-  <button onclick="document.getElementById('dialog-edit-material-row-id').showModal()">Изменить строку</button>
-  <button onclick="document.getElementById('dialog-delete-material').showModal()">Удалить строку</button>
+  <button {% if not can_edit %}disabled{% endif %} onclick="document.getElementById('dialog-add-material').showModal()">Добавить материал</button>
+  <button {% if not can_edit %}disabled{% endif %} onclick="document.getElementById('dialog-edit-material-qty-entry').showModal()">Изменить количество</button>
+  <button {% if not can_edit %}disabled{% endif %} onclick="document.getElementById('dialog-edit-material-row-id').showModal()">Изменить строку</button>
+  <button {% if not can_edit %}disabled{% endif %} onclick="document.getElementById('dialog-delete-material').showModal()">Удалить строку</button>
 </div>
       <table>
         <thead>
@@ -511,10 +511,19 @@ function confirmDeleteMaterial() {
     }
     else if (response.status == 200){
       response.json().then(response => {
+        const m = response.material;
+
         rows.forEach(row => {
           if (+row.cells[0].textContent === +id) pendingMaterialToDelete = row;
         });
-        document.getElementById('confirm-delete-mat').textContent = response.material.name;
+        document.getElementById('confirm-delete-mat').textContent = `
+        ID: ${m.id},
+        Название: ${m.name},
+        Характеристики: ${m.features},
+        Количество: ${m.quantity},
+        Цена: ${m.price},
+        Поставщик: ${m.supplier}
+        `;
         document.getElementById('dialog-delete-material').close();
         document.getElementById('dialog-confirm-delete-material').showModal();
       })

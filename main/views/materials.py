@@ -17,9 +17,18 @@ class MaterialsPage(BaseView, TemplateView):
     template_name = "main/materials.html"
     enable_roles = [UserRole.Cutter, UserRole.WarehouseManager, UserRole.PatternDesigner]
 
+    @property
+    def can_edit(self):
+        user = self.request.user
+        if user.role in [UserRole.PatternDesigner]:
+            return False
+        return True
+
     def get_context_data(self, **kwargs):
         context = super().get_context_data(**kwargs)
-        context["materials"] = MaterialsSerializer(Materials.objects.all().order_by("-id"), many=True).data
+        context["materials"] = MaterialsSerializer(Materials.objects.order_by("-id"), many=True).data
+
+        context["can_edit"] = self.can_edit
 
         return context
 

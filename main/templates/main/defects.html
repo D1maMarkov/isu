@@ -110,7 +110,7 @@
 </div>
 
 <div class="form-styled">
-  <p>Вы уверены, что хотите удалить запись с ID <strong id="confirm-delete-id"></strong>?</p>
+  <p>Вы уверены, что хотите удалить запись <strong id="confirm-delete-data"></strong>?</p>
   <div class="dialog-buttons">
     <button class="primary" onclick="deleteDef(event)">Да</button>
     <button class="secondary" onclick="this.closest('dialog').close()">Нет</button>
@@ -272,7 +272,7 @@
             fetch(`/batch/all/`).then(response => response.json()).then(response => response.batches).then(
               batches => {
                 let selectHTML = '';
-                console.log(batches)
+
                 batches.forEach(b => {
                   selectHTML += `
                   <option value=${b.id} ${+b.id === +d.batch ? 'selected' : ''}>${b.name}</option>
@@ -366,9 +366,17 @@
       const id = document.getElementById("delete-defect-id").value.trim();
       fetch(`/ceh/defects/get/${id}/`).then(response => {
         if (response.status == 200){
-          document.getElementById('confirm-delete-id').textContent = id;
-          document.getElementById('dialog-delete-defect').close();
-          document.getElementById('dialog-confirm-delete-defect').showModal();
+          response.json().then(response => {
+            const d = response.defect;
+            document.getElementById('confirm-delete-data').textContent = `
+            ID: ${id},
+            Партия: ${d.batch},
+            Количество: ${d.quantity},
+            Описание: ${d.description}
+            `;
+            document.getElementById('dialog-delete-defect').close();
+            document.getElementById('dialog-confirm-delete-defect').showModal();
+          })
         }
         if (response.status == 404){
           return alert("Брак с таким ID не найден")
@@ -388,7 +396,7 @@
             d=d.defect;
             const tbody = document.querySelector("tbody");
             const row = document.createElement("tr");
-            console.log(d);
+
             row.innerHTML = `<td>${d.id}</td><td>${d.batch}</td><td>${d.quantity}</td><td>${d.description}</td><td><button onclick="openDoc(event, ${ d.id })">Открыть</button></td>`;
             tbody.prepend(row);
 

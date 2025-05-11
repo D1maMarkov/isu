@@ -1,12 +1,13 @@
 import json
 
 from django.contrib.auth import authenticate, login, logout
-from django.http import HttpRequest, HttpResponse, JsonResponse
+from django.http import HttpRequest, JsonResponse
 from django.shortcuts import redirect
 from django.utils.decorators import method_decorator
 from django.views import View
 from django.views.decorators.csrf import csrf_exempt
 
+from entities.user import UserRole
 from main.models import User
 
 
@@ -25,7 +26,10 @@ class Login(View):
         user = authenticate(**d)
         login(request, user)
 
-        return HttpResponse(status=200)
+        if user.role != UserRole.WarehouseManager:
+            return JsonResponse({"url": "/docs/"})
+
+        return JsonResponse({"url": "/warehouse/materials/"})
 
 
 def logout_view(request: HttpRequest):

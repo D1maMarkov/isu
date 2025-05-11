@@ -50,8 +50,10 @@ function login(event){
             password: form.querySelectorAll("input")[1].value
         })
     }).then(response => {
-        if (response.status == 200){
-            window.location.href = '/docs/'
+        if (response.ok){
+            response.json().then(response => {
+                window.location.href = response.url;
+            })
         }
     })
 }

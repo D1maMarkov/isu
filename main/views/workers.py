@@ -9,6 +9,7 @@ from django.views import View
 from django.views.decorators.csrf import csrf_exempt
 from django.views.generic import TemplateView
 
+from entities.user import UserRole
 from main.models import Batch, User, Worker
 from main.serializers import WorkerSerializer
 from main.views.base import BaseView
@@ -16,6 +17,7 @@ from main.views.base import BaseView
 
 class WorkersPage(BaseView, TemplateView):
     template_name = "main/workers.html"
+    exclude_roles = [UserRole.Sewer]
 
     def get_context_data(self, **kwargs):
         context = super().get_context_data(**kwargs)

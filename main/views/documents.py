@@ -37,9 +37,31 @@ class DocsPage(BaseView, TemplateView):
     template_name = "main/documents.html"
     exclude_roles = [UserRole.WarehouseManager]
 
+    @property
+    def can_load_request(self):
+        user = self.request.user
+        if user.role in [UserRole.Sewer, UserRole.PackerInspector, UserRole.Designer, UserRole.PatternDesigner]:
+            return False
+        return True
+
+    @property
+    def can_edit(self):
+        user = self.request.user
+        if user.role in [UserRole.Sewer, UserRole.PatternDesigner, UserRole.Designer, UserRole.PackerInspector]:
+            return False
+        return True
+
+    @property
+    def can_load_result(self):
+        user = self.request.user
+        if user.role in [UserRole.Sewer]:
+            return False
+        return True
+
+
     def get_context_data(self, **kwargs):
         context = super().get_context_data(**kwargs)
-        if self.request.user.role in [UserRole.PackerInspector, UserRole.Designer, UserRole.PatternDesigner]:
+        if self.request.user.role in [UserRole.Designer, UserRole.PatternDesigner]:
             docs = Document.objects.filter(category="Задание")
 
         elif self.request.user.role in [
@@ -48,12 +70,18 @@ class DocsPage(BaseView, TemplateView):
         ]:
             docs = Document.objects.filter(category="тех. Задание")
         elif self.request.user.role in [UserRole.Cutter]:
-            docs = Document.objects.filter(Q(category="тех. Задание") | Q("Заказ")).order_by("-id")
+            docs = Document.objects.filter(Q(category="тех. Задание") | Q(category="Заказ")).order_by("-id")
         else:
             docs = Document.objects.all().order_by("-id")
 
         context["docs"] = DocumentSerializer(docs, many=True).data
         context["batches"] = Batch.objects.order_by("-id")
+
+        context["can_load_request"] = self.can_load_request
+        context["can_load_result"] = self.can_load_result
+
+        context["can_edit"] = self.can_edit
+
         return context
 
 
@@ -81,8 +109,6 @@ class DeleteDoc(View):
 
 
 class GetDocument(BaseView):
-    enable_roles = [UserRole.Designer, UserRole.Sewer]
-
     def get(self, request: HttpRequest, id: str):
         id = int(id)
         material = get_object_or_404(Document, id=id)

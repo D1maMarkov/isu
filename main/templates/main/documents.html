@@ -16,7 +16,7 @@
     <div style="display: flex;">
 
       <div class="filters">
-        <input type="text" placeholder="Поиск по ID заявки">
+        <input type="text" placeholder="Поиск по ID документа">
         <input type="text" placeholder="Поиск по номеру партии">
 
         <select>
@@ -34,9 +34,9 @@
     </div>
       <div style="display: flex; gap: 0.5rem; margin-bottom: 1rem;">
         <button title="Применить фильтры поиска к документам" onclick="filterDocs()">Поиск</button>
-        <button title="Добавить новую заявку" onclick="openAddDoc(event)">Добавить</button>
-        <button title="Редактировать существующую заявку по ID" onclick="document.getElementById('dialog-edit-doc-entry').showModal()">Изменить</button>
-        <button title="Удалить заявку по ID с подтверждением" onclick="document.getElementById('dialog-delete-doc-id').showModal()">Удалить</button>
+        <button {% if not can_edit %} disabled {% endif %} title="Добавить новую заявку" onclick="openAddDoc(event)">Добавить</button>
+        <button {% if not can_edit %} disabled {% endif %} title="Редактировать существующую заявку по ID" onclick="document.getElementById('dialog-edit-doc-entry').showModal()">Изменить</button>
+        <button {% if not can_edit %} disabled {% endif %} title="Удалить заявку по ID с подтверждением" onclick="document.getElementById('dialog-delete-doc-id').showModal()">Удалить</button>
       </div>
         </div>
     </div>
@@ -44,15 +44,15 @@
     <table>
       <thead>
         <tr>
-          <th>ID заявки</th><th>Номер партии</th><th>Документ</th>
+          <th>ID</th><th>Номер партии</th><th>Документ</th>
           <th>Дата загрузки</th><th>Категория</th><th>Результат</th><th>Обновлено</th>
         </tr>
       </thead>
       <tbody>
         {% for d in docs %}
         <tr>
-          <td>{{ d.id }}</td><td>{{ d.batch }}</td><td><button title="Открыть загруженные документы заявки" onclick="openDoc(event, {{d.id}})">Открыть</button></td>
-          <td>{{ d.created_at }}</td><td>{{ d.category }}</td><td><button title="Открыть результат заявки" onclick="openResults(event, {{d.id}})">Открыть</button></td><td>{{ d.updated_at }}</td>
+          <td>{{ d.id }}</td><td>{{ d.batch }}</td><td><button title="Открыть загруженные документы" onclick="openDoc(event, {{d.id}})">Открыть</button></td>
+          <td>{{ d.created_at }}</td><td>{{ d.category }}</td><td><button title="Открыть результат" onclick="openResults(event, {{d.id}})">Открыть</button></td><td>{{ d.updated_at }}</td>
           {% endfor %}
         </tr>
       </tbody>
@@ -71,7 +71,7 @@
         </div>
 
         <p>Загрузите новую версию документа:</p>
-        <input type="file" id="doc-input" accept=".doc,.docx">
+        <input type="file" id="doc-input" accept=".doc,.docx" {% if not can_load_request %}disabled{% endif %}>
 
         <div class="dialog-buttons">
           <button class="primary" onclick="sendDoc(event)">Отправить</button>
@@ -97,7 +97,7 @@
     <!-- Диалог для добавления заявки -->
     <dialog id="dialog-add-doc" class="custom-dialog">
       <div class="dialog-header">
-        <h2>Добавление заявки</h2>
+        <h2>Добавление документа</h2>
       </div>
 
       <form class="form-styled" onsubmit="addDoc(event)">
@@ -160,7 +160,7 @@
       </div>
       <form class="form-styled">
         <div class="form-field">
-          <label for="edit-doc-id-input">Введите ID заявки</label>
+          <label for="edit-doc-id-input">Введите ID документа</label>
           <input type="text" id="edit-doc-id-input" placeholder="Например, 0001">
         </div>
         <div class="dialog-buttons">
@@ -201,11 +201,11 @@
     <!-- Диалог: ввод ID заявки -->
 <dialog id="dialog-delete-doc-id" class="custom-dialog">
   <div class="dialog-header">
-    <h2>Удаление заявки</h2>
+    <h2>Удаление документа</h2>
   </div>
   <form class="form-styled">
     <div class="form-field">
-      <label for="delete-doc-id">Введите ID заявки</label>
+      <label for="delete-doc-id">Введите ID документа</label>
       <input type="text" id="delete-doc-id" placeholder="Например, 0001">
     </div>
     <div class="dialog-buttons">
@@ -261,8 +261,8 @@
         <hr>
       </div>
 
-      <p>Загрузите новый результат заявки:</p>
-      <input type="file" id="result-input" accept=".doc,.docx">
+      <p>Загрузите новый результат документа:</p>
+      <input type="file" id="result-input" accept=".doc,.docx" {% if not can_load_result %}disabled{% endif %}>
 
       <div class="dialog-buttons">
         <button class="primary" onclick="sendResult(event)">Отправить</button>
@@ -310,11 +310,12 @@
         response => response.document
       ).then(d => {
         let docsHTML = '';
-        console.log(d)
         d.results.forEach(r => {
           docsHTML += `<div class="uploaded-section">
             <a href="${r.url}" target="_blank" title="Скачать документ">${r.name}</a>
+            {% if can_load_result %}
             <button class="delete-doc-btn" onclick="removeUploadedDoc(event, ${r.id})">×</button>
+            {% endif %}
           </div>`
         })
         if (docsHTML.length > 0){
@@ -367,7 +368,9 @@
           document.getElementById("doc-section").innerHTML = `
               <div class="uploaded-section">
                 <a href="${d.request_url}" target="_blank" title="Скачать документ" id="doc-name">${d.request_name}</a>
+                {% if can_load_request %}
                 <button class="delete-doc-btn" onclick="confirmRemoveUploadedRequest(event, ${d.id})">×</button>
+                {% endif %}
               </div>
               <hr>
           `
@@ -470,7 +473,7 @@
           d = r.document;
           const tbody = document.querySelector("tbody");
           const row = document.createElement("tr");
-          row.innerHTML = `<td>${d.id}</td><td>${d.batch}</td><td><button title="Открыть загруженные документы заявки" onclick="document.getElementById('dialog-z').showModal()">Открыть</button><td>${d.created_at}</td><td>${d.category}</td><td><button title="Открыть результаты заявки" onclick="document.getElementById('dialog-z').showModal()">Открыть</button><td>${d.updated_at}</td>`;
+          row.innerHTML = `<td>${d.id}</td><td>${d.batch}</td><td><button title="Открыть загруженные документы" onclick="document.getElementById('dialog-z').showModal()">Открыть</button><td>${d.created_at}</td><td>${d.category}</td><td><button title="Открыть результаты" onclick="document.getElementById('dialog-z').showModal()">Открыть</button><td>${d.updated_at}</td>`;
           tbody.prepend(row);
           document.getElementById('dialog-add-doc').querySelector('form').reset();
           document.getElementById('dialog-add-doc').close()
@@ -550,8 +553,6 @@
         fetch(`/batch/all/`).then(response => response.json()).then(response => response.batches).then(
           batches => {
             let selectHTML = '';
-            console.log(batches)
-            console.log(d)
             batches.forEach(b => {
               selectHTML += `
               <option value=${b.id} ${b.id == d.batch ? 'selected' : ''}>${b.name}</option>
@@ -588,7 +589,6 @@ function removeUploadedDoc(event, id) {
 function performDeleteDoc(event) {
   event.preventDefault();
   const id = document.getElementById('confirm-delete-doc-id').textContent;
-  console.log(`Удаление заявки с ID: ${id}`);
   document.getElementById('dialog-confirm-delete-doc').close();
   fetch(`/docs/delete/${id}/`, {method: "DELETE"}).then(response => {
     if (response.status == 203){
@@ -632,7 +632,7 @@ let pendingEdit = {};
             tbody.innerHTML = '';
             response.documents.forEach(d => {
               const row = document.createElement("tr");
-              row.innerHTML = `<td>${d.id}</td><td>${d.batch}</td><td><button title="Открыть загруженные документы заявки" onclick="document.getElementById('dialog-z').showModal()">Открыть</button><td>${d.created_at}</td><td>${d.category}</td><td><button title="Открыть результаты заявки" onclick="document.getElementById('dialog-z').showModal()">Открыть</button><td>${d.updated_at}</td>`;
+              row.innerHTML = `<td>${d.id}</td><td>${d.batch}</td><td><button title="Открыть загруженные документы" onclick="document.getElementById('dialog-z').showModal()">Открыть</button><td>${d.created_at}</td><td>${d.category}</td><td><button title="Открыть результаты" onclick="document.getElementById('dialog-z').showModal()">Открыть</button><td>${d.updated_at}</td>`;
               tbody.appendChild(row)
             })
           })
